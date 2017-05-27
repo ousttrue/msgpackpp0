@@ -303,7 +303,8 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack(int n)
+		template<typename T>
+		packer& pack_integer(T n)
 		{
 			if (n < 0)
 			{
@@ -317,14 +318,32 @@ namespace msgpackpp {
 				}
 			}
 			else {
-				if (n < 0x70)
+				if (n <= 0x7F)
 				{
 					m_buffer.push_back(static_cast<std::uint8_t>(n));
 				}
-				else if (n < 0xFF)
+				else if (n <= 0xFF)
 				{
 					m_buffer.push_back(pack_type::UINT8);
 					m_buffer.push_back(static_cast<std::uint8_t>(n));
+				}
+				else if (n <= 0xFFFF)
+				{
+					m_buffer.push_back(pack_type::UINT16);
+					// network byteorder
+					auto _n = static_cast<std::uint16_t>(n);
+					m_buffer.push_back((_n>>8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
+				}
+				else if (n <= 0xFFFFFFFF)
+				{
+					m_buffer.push_back(pack_type::UINT32);
+					// network byteorder
+					auto _n = static_cast<std::uint32_t>(n);
+					m_buffer.push_back((_n >> 24) & 0xff);
+					m_buffer.push_back((_n >> 16) & 0xff);
+					m_buffer.push_back((_n >> 8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
 				}
 				else {
 					throw std::exception("not implemented");
@@ -333,7 +352,7 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack(bool isTrue)
+		packer& pack_bool(bool isTrue)
 		{
 			if (isTrue) {
 				m_buffer.push_back(pack_type::TRUE);
@@ -359,7 +378,8 @@ namespace msgpackpp {
 			// ToDo
 		}
 
-		int get_int()const
+		template<typename T>
+		T get_integer()const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			if (type < 0x70) {
@@ -370,6 +390,8 @@ namespace msgpackpp {
 			switch (type)
 			{
 			case pack_type::UINT8: return m_p[1];
+			case pack_type::UINT16: return (m_p[1] << 8) | m_p[2];
+			case pack_type::UINT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
 			case pack_type::NEGATIVE_FIXNUM: return -32;
 			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;
 			case pack_type::NEGATIVE_FIXNUM_0x1E: return -30;
