@@ -403,6 +403,32 @@ namespace msgpackpp {
 			return *this;
 		}
 
+		packer& pack_float(float n)
+		{
+			auto _n = *reinterpret_cast<std::uint32_t*>(&n);
+			m_buffer.push_back(pack_type::FLOAT);
+			m_buffer.push_back((_n >> 24) & 0xff);
+			m_buffer.push_back((_n >> 16) & 0xff);
+			m_buffer.push_back((_n >> 8) & 0xff);
+			m_buffer.push_back(_n  & 0xff);
+			return *this;
+		}
+
+		packer& pack_double(double n)
+		{
+			auto _n = *reinterpret_cast<std::uint64_t*>(&n);
+			m_buffer.push_back(pack_type::DOUBLE);
+			m_buffer.push_back((_n >> 56) & 0xff);
+			m_buffer.push_back((_n >> 48) & 0xff);
+			m_buffer.push_back((_n >> 40) & 0xff);
+			m_buffer.push_back((_n >> 32) & 0xff);
+			m_buffer.push_back((_n >> 24) & 0xff);
+			m_buffer.push_back((_n >> 16) & 0xff);
+			m_buffer.push_back((_n >> 8) & 0xff);
+			m_buffer.push_back(_n & 0xff);
+			return *this;
+		}
+
 		packer& pack_bool(bool isTrue)
 		{
 			if (isTrue) {
@@ -430,7 +456,7 @@ namespace msgpackpp {
 		}
 
 		template<typename T>
-		T get_integer()const
+		T get_number()const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			if (type < 0x70) {
@@ -459,6 +485,20 @@ namespace msgpackpp {
 					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
 				};
 				return *reinterpret_cast<std::int64_t*>(buf);
+			}
+			case pack_type::FLOAT:
+			{
+				std::uint8_t buf[8] = {
+					m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<float*>(buf);
+			}
+			case pack_type::DOUBLE:
+			{
+				std::uint8_t buf[8] = {
+					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<double*>(buf);
 			}
 			case pack_type::NEGATIVE_FIXNUM: return -32;
 			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;

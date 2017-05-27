@@ -60,7 +60,7 @@ TEST_CASE("small_int")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(1 == parsed.get_integer<std::uint8_t>());
+	REQUIRE(1 == parsed.get_number<std::uint8_t>());
 }
 
 /// negative fixnum stores 5-bit negative integer(-1 to -32)
@@ -78,7 +78,7 @@ TEST_CASE("small_negative_int")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(-1 == parsed.get_integer<std::int8_t>());
+	REQUIRE(-1 == parsed.get_number<std::int8_t>());
 }
 
 /// uint 8 stores a 8-bit unsigned integer
@@ -96,7 +96,7 @@ TEST_CASE("uint8")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(128 == parsed.get_integer<std::uint8_t>());
+	REQUIRE(128 == parsed.get_number<std::uint8_t>());
 }
 
 /// uint 16 stores a 16-bit big-endian unsigned integer
@@ -116,7 +116,7 @@ TEST_CASE("uint16")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(256 == parsed.get_integer<std::uint16_t>());
+	REQUIRE(256 == parsed.get_number<std::uint16_t>());
 }
 
 /// uint 32 stores a 32-bit big-endian unsigned integer
@@ -141,7 +141,7 @@ TEST_CASE("uint32")
 
 		// unpack
 		auto parsed = msgpackpp::parser(p.data(), p.size());
-		REQUIRE(value == parsed.get_integer<std::uint32_t>());
+		REQUIRE(value == parsed.get_number<std::uint32_t>());
 	}
 
 	{
@@ -156,7 +156,7 @@ TEST_CASE("uint32")
 
 		// unpack
 		auto parsed = msgpackpp::parser(p.data(), p.size());
-		REQUIRE(value == parsed.get_integer<std::uint32_t>());
+		REQUIRE(value == parsed.get_number<std::uint32_t>());
 	}
 }
 
@@ -185,7 +185,7 @@ TEST_CASE("uint64")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(value == parsed.get_integer<std::uint64_t>());
+	REQUIRE(value == parsed.get_number<std::uint64_t>());
 }
 
 /// int 8 stores a 8-bit signed integer
@@ -206,7 +206,7 @@ TEST_CASE("int8")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(value == parsed.get_integer<std::int8_t>());
+	REQUIRE(value == parsed.get_number<std::int8_t>());
 }
 
 /// int 16 stores a 16-bit big-endian signed integer
@@ -226,7 +226,7 @@ TEST_CASE("int16")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(value == parsed.get_integer<std::int16_t>());
+	REQUIRE(value == parsed.get_number<std::int16_t>());
 }
 
 /// int 32 stores a 32-bit big-endian signed integer
@@ -246,7 +246,7 @@ TEST_CASE("int32")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(value == parsed.get_integer<std::int32_t>());
+	REQUIRE(value == parsed.get_number<std::int32_t>());
 }
 
 /// int 64 stores a 64-bit big-endian signed integer
@@ -266,5 +266,45 @@ TEST_CASE("int64")
 
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-	REQUIRE(value == parsed.get_integer<std::int64_t>());
+	REQUIRE(value == parsed.get_number<std::int64_t>());
+}
+
+/// float 32 stores a floating point number in IEEE 754 single precision floating point number format:
+/// +--------+--------+--------+--------+--------+
+/// |  0xca  |XXXXXXXX|XXXXXXXX|XXXXXXXX|XXXXXXXX
+/// +--------+--------+--------+--------+--------+
+TEST_CASE("float32")
+{
+	float value = 1.5f;
+
+	// packing
+	auto p = msgpackpp::packer().pack_float(value).get_payload();
+
+	// check
+	REQUIRE(5== p.size());
+	REQUIRE(0xca== p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value==parsed.get_number<float>());
+}
+
+/// float 64 stores a floating point number in IEEE 754 double precision floating point number format:
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// |  0xcb  |YYYYYYYY|YYYYYYYY|YYYYYYYY|YYYYYYYY|YYYYYYYY|YYYYYYYY|YYYYYYYY|YYYYYYYY|
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+TEST_CASE("float64")
+{
+	double value = 1.111111111111111111111111111111111111111111111111;
+
+	// packing
+	auto p = msgpackpp::packer().pack_double(value).get_payload();
+
+	// check
+	REQUIRE(9== p.size());
+	REQUIRE(0xcb== p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value==parsed.get_number<double>());
 }
