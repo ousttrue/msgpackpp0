@@ -132,8 +132,8 @@ TEST_CASE("uint32")
 		auto p = msgpackpp::packer().pack_integer(value).get_payload();
 
 		// check
-		REQUIRE(5==p.size());
-		REQUIRE(0xce==p[0]);
+		REQUIRE(5 == p.size());
+		REQUIRE(0xce == p[0]);
 		REQUIRE(0x00 == p[1]);
 		REQUIRE(0x01 == p[2]);
 		REQUIRE(0x00 == p[3]);
@@ -141,7 +141,7 @@ TEST_CASE("uint32")
 
 		// unpack
 		auto parsed = msgpackpp::parser(p.data(), p.size());
-		REQUIRE(value==parsed.get_integer<std::uint32_t>());
+		REQUIRE(value == parsed.get_integer<std::uint32_t>());
 	}
 
 	{
@@ -186,4 +186,85 @@ TEST_CASE("uint64")
 	// unpack
 	auto parsed = msgpackpp::parser(p.data(), p.size());
 	REQUIRE(value == parsed.get_integer<std::uint64_t>());
+}
+
+/// int 8 stores a 8-bit signed integer
+/// +--------+--------+
+/// |  0xd0  |ZZZZZZZZ|
+/// +--------+--------+
+TEST_CASE("int8")
+{
+	char value = -33;
+
+	// packing
+	auto p = msgpackpp::packer().pack_integer(value).get_payload();
+
+	// check
+	REQUIRE(2 == p.size());
+	REQUIRE(0xd0 == p[0]);
+	REQUIRE(0xdf == p[1]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value == parsed.get_integer<std::int8_t>());
+}
+
+/// int 16 stores a 16-bit big-endian signed integer
+/// +--------+--------+--------+
+/// |  0xd1  |ZZZZZZZZ|ZZZZZZZZ|
+/// +--------+--------+--------+
+TEST_CASE("int16")
+{
+	int value = -256;
+
+	// packing
+	auto p = msgpackpp::packer().pack_integer(value).get_payload();
+
+	// check
+	REQUIRE(3 == p.size());
+	REQUIRE(0xd1 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value == parsed.get_integer<std::int16_t>());
+}
+
+/// int 32 stores a 32-bit big-endian signed integer
+/// +--------+--------+--------+--------+--------+
+/// |  0xd2  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
+/// +--------+--------+--------+--------+--------+
+TEST_CASE("int32")
+{
+	int value = -65535;
+
+	// packing
+	auto p = msgpackpp::packer().pack_integer(value).get_payload();
+
+	// check
+	REQUIRE(5 == p.size());
+	REQUIRE(0xd2 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value == parsed.get_integer<std::int32_t>());
+}
+
+/// int 64 stores a 64-bit big-endian signed integer
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// |  0xd3  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+TEST_CASE("int64")
+{
+	long long value = -4294967296;
+
+	// packing
+	auto p = msgpackpp::packer().pack_integer(value).get_payload();
+
+	// check
+	REQUIRE(9 == p.size());
+	REQUIRE(0xd3 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value == parsed.get_integer<std::int64_t>());
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <limits>
 
 
 namespace msgpackpp {
@@ -313,6 +314,43 @@ namespace msgpackpp {
 					m_buffer.push_back(pack_type::NEGATIVE_FIXNUM
 						| static_cast<std::uint8_t>((n + 32)));
 				}
+				else if (n >= std::numeric_limits<std::int8_t>::min())
+				{
+					m_buffer.push_back(pack_type::INT8);
+					m_buffer.push_back(n);
+				}
+				else if (n >= std::numeric_limits<std::int16_t>::min())
+				{
+					m_buffer.push_back(pack_type::INT16);
+					// network byteorder
+					auto _n = static_cast<std::int16_t>(n);
+					m_buffer.push_back((_n >> 8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
+				}
+				else if (n >= std::numeric_limits<std::int32_t>::min())
+				{
+					m_buffer.push_back(pack_type::INT32);
+					// network byteorder
+					auto _n = static_cast<std::int32_t>(n);
+					m_buffer.push_back((_n >> 24) & 0xff);
+					m_buffer.push_back((_n >> 16) & 0xff);
+					m_buffer.push_back((_n >> 8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
+				}
+				else if (n >= std::numeric_limits<std::int64_t>::min())
+				{
+					m_buffer.push_back(pack_type::INT64);
+					// network byteorder
+					auto _n = static_cast<std::int64_t>(n);
+					m_buffer.push_back((_n >> 56) & 0xff);
+					m_buffer.push_back((_n >> 48) & 0xff);
+					m_buffer.push_back((_n >> 40) & 0xff);
+					m_buffer.push_back((_n >> 32) & 0xff);
+					m_buffer.push_back((_n >> 24) & 0xff);
+					m_buffer.push_back((_n >> 16) & 0xff);
+					m_buffer.push_back((_n >> 8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
+				}
 				else {
 					throw std::exception("not implemented");
 				}
@@ -322,20 +360,20 @@ namespace msgpackpp {
 				{
 					m_buffer.push_back(static_cast<std::uint8_t>(n));
 				}
-				else if (n <= 0xFF)
+				else if (n <= std::numeric_limits<std::uint8_t>::max())
 				{
 					m_buffer.push_back(pack_type::UINT8);
 					m_buffer.push_back(static_cast<std::uint8_t>(n));
 				}
-				else if (n <= 0xFFFF)
+				else if (n <= std::numeric_limits<std::uint16_t>::max())
 				{
 					m_buffer.push_back(pack_type::UINT16);
 					// network byteorder
 					auto _n = static_cast<std::uint16_t>(n);
-					m_buffer.push_back((_n>>8) & 0xff);
+					m_buffer.push_back((_n >> 8) & 0xff);
 					m_buffer.push_back(_n & 0xff);
 				}
-				else if (n <= 0xFFFFFFFF)
+				else if (n <= std::numeric_limits<std::uint32_t>::max())
 				{
 					m_buffer.push_back(pack_type::UINT32);
 					// network byteorder
@@ -345,7 +383,7 @@ namespace msgpackpp {
 					m_buffer.push_back((_n >> 8) & 0xff);
 					m_buffer.push_back(_n & 0xff);
 				}
-				else {
+				else if (n <= std::numeric_limits<std::uint64_t>::max()) {
 					m_buffer.push_back(pack_type::UINT64);
 					// network byteorder
 					auto _n = static_cast<std::uint64_t>(n);
@@ -357,6 +395,9 @@ namespace msgpackpp {
 					m_buffer.push_back((_n >> 16) & 0xff);
 					m_buffer.push_back((_n >> 8) & 0xff);
 					m_buffer.push_back(_n & 0xff);
+				}
+				else {
+					throw std::exception("not implemented");
 				}
 			}
 			return *this;
@@ -402,13 +443,22 @@ namespace msgpackpp {
 			case pack_type::UINT8: return m_p[1];
 			case pack_type::UINT16: return (m_p[1] << 8) | m_p[2];
 			case pack_type::UINT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
-			case pack_type::UINT64: 
+			case pack_type::UINT64:
 			{
 				std::uint8_t buf[8] = {
-					//m_p[1], m_p[2], m_p[3], m_p[4], m_p[5], m_p[6], m_p[7], m_p[8]
 					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
 				};
 				return *reinterpret_cast<std::uint64_t*>(buf);
+			}
+			case pack_type::INT8: return m_p[1];
+			case pack_type::INT16: return (m_p[1] << 8) | m_p[2];
+			case pack_type::INT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
+			case pack_type::INT64:
+			{
+				std::uint8_t buf[8] = {
+					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<std::int64_t*>(buf);
 			}
 			case pack_type::NEGATIVE_FIXNUM: return -32;
 			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;
