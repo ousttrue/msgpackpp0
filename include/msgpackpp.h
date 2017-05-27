@@ -346,7 +346,17 @@ namespace msgpackpp {
 					m_buffer.push_back(_n & 0xff);
 				}
 				else {
-					throw std::exception("not implemented");
+					m_buffer.push_back(pack_type::UINT64);
+					// network byteorder
+					auto _n = static_cast<std::uint64_t>(n);
+					m_buffer.push_back((_n >> 56) & 0xff);
+					m_buffer.push_back((_n >> 48) & 0xff);
+					m_buffer.push_back((_n >> 40) & 0xff);
+					m_buffer.push_back((_n >> 32) & 0xff);
+					m_buffer.push_back((_n >> 24) & 0xff);
+					m_buffer.push_back((_n >> 16) & 0xff);
+					m_buffer.push_back((_n >> 8) & 0xff);
+					m_buffer.push_back(_n & 0xff);
 				}
 			}
 			return *this;
@@ -392,6 +402,14 @@ namespace msgpackpp {
 			case pack_type::UINT8: return m_p[1];
 			case pack_type::UINT16: return (m_p[1] << 8) | m_p[2];
 			case pack_type::UINT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
+			case pack_type::UINT64: 
+			{
+				std::uint8_t buf[8] = {
+					//m_p[1], m_p[2], m_p[3], m_p[4], m_p[5], m_p[6], m_p[7], m_p[8]
+					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<std::uint64_t*>(buf);
+			}
 			case pack_type::NEGATIVE_FIXNUM: return -32;
 			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;
 			case pack_type::NEGATIVE_FIXNUM_0x1E: return -30;

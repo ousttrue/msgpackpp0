@@ -159,3 +159,31 @@ TEST_CASE("uint32")
 		REQUIRE(value == parsed.get_integer<std::uint32_t>());
 	}
 }
+
+/// uint 64 stores a 64-bit big-endian unsigned integer
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// |  0xcf  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+TEST_CASE("uint64")
+{
+	unsigned long long value = 4294967296;
+
+	// packing
+	auto p = msgpackpp::packer().pack_integer(value).get_payload();
+
+	// check
+	REQUIRE(9 == p.size());
+	REQUIRE(0xcf == p[0]);
+	REQUIRE(0x00 == p[1]);
+	REQUIRE(0x00 == p[2]);
+	REQUIRE(0x00 == p[3]);
+	REQUIRE(0x01 == p[4]);
+	REQUIRE(0x00 == p[5]);
+	REQUIRE(0x00 == p[6]);
+	REQUIRE(0x00 == p[7]);
+	REQUIRE(0x00 == p[8]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(value == parsed.get_integer<std::uint64_t>());
+}
