@@ -471,3 +471,64 @@ TEST_CASE("bin32")
 	auto parsed = msgpackpp::parser(p.data(), p.size());
 	REQUIRE(buf == parsed.get_binary());
 }
+
+/// array 16 stores an array whose length is upto (2^16)-1 elements:
+/// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+/// |  0xdc  |YYYYYYYY|YYYYYYYY|    N objects    |
+/// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("array16")
+{
+	// packing
+	auto packer = msgpackpp::packer();
+	packer.pack_array(16)
+		<< 1 << "str1" << true << 1.5f
+		<< 2 << "str2" << false << 1.6f
+		<< 3 << "str3" << true << 1.7
+		<< 4 << "str4" << false << 1.8
+		;
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(0xdc == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_array());
+
+	// array
+	REQUIRE(16==parsed.count());
+	REQUIRE(1==parsed[0].get_number<int>());
+	REQUIRE("str1"==parsed[1].get_string());
+	REQUIRE(true==parsed[2].get_bool());
+	REQUIRE(1.5f==parsed[3].get_number<float>());
+
+}
+
+/// array 32 stores an array whose length is upto (2^32)-1 elements:
+/// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+/// |  0xdd  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|    N objects    |
+/// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("array32")
+{
+	auto packer = msgpackpp::packer();
+	// packing
+	packer.pack_array(0xFFFF + 1);
+	for (auto i = 0; i < 0xFFFF + 1; ++i) {
+		packer << i;
+	}
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(0xdd == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_array());
+
+	// array
+	REQUIRE(0xFFFF + 1 == parsed.count());
+
+	for (auto i = 0; i < parsed.count(); i+=1000) {
+		REQUIRE(i == parsed[i].get_number<int>());
+	}
+}

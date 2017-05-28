@@ -487,8 +487,62 @@ namespace msgpackpp {
 			return *this;
 		}
 
+		packer& pack_array(int n)
+		{
+			if (n < 16)
+			{
+				m_buffer.push_back(pack_type::FIX_ARRAY | static_cast<std::uint8_t>(n));
+			}
+			else if (n < std::numeric_limits<std::uint16_t>::max())
+			{
+				m_buffer.push_back(pack_type::ARRAY16);
+				push_number_reverse(static_cast<std::uint16_t>(n));
+			}
+			else if (n < std::numeric_limits<std::uint32_t>::max())
+			{
+				m_buffer.push_back(pack_type::ARRAY32);
+				push_number_reverse(static_cast<std::uint32_t>(n));
+			}
+			else {
+				throw std::exception("not implemented");
+			}
+			return *this;
+		}
+
 		const std::vector<std::uint8_t> &get_payload()const { return m_buffer; }
 	};
+
+	template<typename T>
+	packer& operator<<(packer &p, const T &t)
+	{
+		return serialize(p, t);
+	}
+	template<typename T>
+	packer& serialize(packer &p, const T &t)
+	{
+		throw std::exception("not implemented");
+	}
+	template<>
+	packer& serialize(packer &p, const int &t)
+	{
+		return p.pack_integer(t);
+	}
+	packer& serialize(packer &p, const char* t)
+	{
+		return p.pack_str(t);
+	}
+	packer& serialize(packer &p, const bool &t)
+	{
+		return p.pack_bool(t);
+	}
+	packer& serialize(packer &p, const float &t)
+	{
+		return p.pack_float(t);
+	}
+	packer& serialize(packer &p, const double &t)
+	{
+		return p.pack_double(t);
+	}
 
 	class parser
 	{
@@ -524,6 +578,19 @@ namespace msgpackpp {
 			: m_p(p)
 		{
 			// ToDo
+		}
+
+#pragma region leaf
+		bool get_bool()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::TRUE: return true;
+			case pack_type::FALSE: return false;
+			}
+
+			throw std::exception("not bool");
 		}
 
 		std::string get_string()const
@@ -588,7 +655,7 @@ namespace msgpackpp {
 		T get_number()const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
-			if (type < 0x70) {
+			if (type <= 0x7f) {
 				// small int
 				return type;
 			}
@@ -640,6 +707,688 @@ namespace msgpackpp {
 			}
 
 			throw std::exception("not implemented");
+		}
+#pragma endregion
+
+		bool is_array()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::FIX_ARRAY:
+			case pack_type::FIX_ARRAY_0x1:
+			case pack_type::FIX_ARRAY_0x2:
+			case pack_type::FIX_ARRAY_0x3:
+			case pack_type::FIX_ARRAY_0x4:
+			case pack_type::FIX_ARRAY_0x5:
+			case pack_type::FIX_ARRAY_0x6:
+			case pack_type::FIX_ARRAY_0x7:
+			case pack_type::FIX_ARRAY_0x8:
+			case pack_type::FIX_ARRAY_0x9:
+			case pack_type::FIX_ARRAY_0xA:
+			case pack_type::FIX_ARRAY_0xB:
+			case pack_type::FIX_ARRAY_0xC:
+			case pack_type::FIX_ARRAY_0xD:
+			case pack_type::FIX_ARRAY_0xE:
+			case pack_type::FIX_ARRAY_0xF:
+			case pack_type::ARRAY16:
+			case pack_type::ARRAY32:
+				return true;
+			}
+
+			return false;
+		}
+
+		int count()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::FIX_ARRAY: return 0;
+			case pack_type::FIX_ARRAY_0x1: return 1;
+			case pack_type::FIX_ARRAY_0x2:return 2;
+			case pack_type::FIX_ARRAY_0x3:return 3;
+			case pack_type::FIX_ARRAY_0x4:return 4;
+			case pack_type::FIX_ARRAY_0x5:return 5;
+			case pack_type::FIX_ARRAY_0x6:return 6;
+			case pack_type::FIX_ARRAY_0x7:return 7;
+			case pack_type::FIX_ARRAY_0x8:return 8;
+			case pack_type::FIX_ARRAY_0x9:return 9;
+			case pack_type::FIX_ARRAY_0xA:return 10;
+			case pack_type::FIX_ARRAY_0xB:return 11;
+			case pack_type::FIX_ARRAY_0xC:return 12;
+			case pack_type::FIX_ARRAY_0xD:return 13;
+			case pack_type::FIX_ARRAY_0xE:return 14;
+			case pack_type::FIX_ARRAY_0xF:return 15;
+			case pack_type::ARRAY16: return body_number<std::uint16_t>();
+			case pack_type::ARRAY32: return body_number<std::uint32_t>();
+			}
+
+			throw std::exception("not array or map");
+		}
+
+	private:
+		int body_index()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+#pragma region POSITIVE_FIXNUM 0x00 - 0x7F
+			case POSITIVE_FIXNUM: return 1;
+			case POSITIVE_FIXNUM_0x01: return 1;
+			case POSITIVE_FIXNUM_0x02: return 1;
+			case POSITIVE_FIXNUM_0x03: return 1;
+			case POSITIVE_FIXNUM_0x04: return 1;
+			case POSITIVE_FIXNUM_0x05: return 1;
+			case POSITIVE_FIXNUM_0x06: return 1;
+			case POSITIVE_FIXNUM_0x07: return 1;
+			case POSITIVE_FIXNUM_0x08: return 1;
+			case POSITIVE_FIXNUM_0x09: return 1;
+			case POSITIVE_FIXNUM_0x0A: return 1;
+			case POSITIVE_FIXNUM_0x0B: return 1;
+			case POSITIVE_FIXNUM_0x0C: return 1;
+			case POSITIVE_FIXNUM_0x0D: return 1;
+			case POSITIVE_FIXNUM_0x0E: return 1;
+			case POSITIVE_FIXNUM_0x0F: return 1;
+
+			case POSITIVE_FIXNUM_0x10: return 1;
+			case POSITIVE_FIXNUM_0x11: return 1;
+			case POSITIVE_FIXNUM_0x12: return 1;
+			case POSITIVE_FIXNUM_0x13: return 1;
+			case POSITIVE_FIXNUM_0x14: return 1;
+			case POSITIVE_FIXNUM_0x15: return 1;
+			case POSITIVE_FIXNUM_0x16: return 1;
+			case POSITIVE_FIXNUM_0x17: return 1;
+			case POSITIVE_FIXNUM_0x18: return 1;
+			case POSITIVE_FIXNUM_0x19: return 1;
+			case POSITIVE_FIXNUM_0x1A: return 1;
+			case POSITIVE_FIXNUM_0x1B: return 1;
+			case POSITIVE_FIXNUM_0x1C: return 1;
+			case POSITIVE_FIXNUM_0x1D: return 1;
+			case POSITIVE_FIXNUM_0x1E: return 1;
+			case POSITIVE_FIXNUM_0x1F: return 1;
+
+			case POSITIVE_FIXNUM_0x20: return 1;
+			case POSITIVE_FIXNUM_0x21: return 1;
+			case POSITIVE_FIXNUM_0x22: return 1;
+			case POSITIVE_FIXNUM_0x23: return 1;
+			case POSITIVE_FIXNUM_0x24: return 1;
+			case POSITIVE_FIXNUM_0x25: return 1;
+			case POSITIVE_FIXNUM_0x26: return 1;
+			case POSITIVE_FIXNUM_0x27: return 1;
+			case POSITIVE_FIXNUM_0x28: return 1;
+			case POSITIVE_FIXNUM_0x29: return 1;
+			case POSITIVE_FIXNUM_0x2A: return 1;
+			case POSITIVE_FIXNUM_0x2B: return 1;
+			case POSITIVE_FIXNUM_0x2C: return 1;
+			case POSITIVE_FIXNUM_0x2D: return 1;
+			case POSITIVE_FIXNUM_0x2E: return 1;
+			case POSITIVE_FIXNUM_0x2F: return 1;
+
+			case POSITIVE_FIXNUM_0x30: return 1;
+			case POSITIVE_FIXNUM_0x31: return 1;
+			case POSITIVE_FIXNUM_0x32: return 1;
+			case POSITIVE_FIXNUM_0x33: return 1;
+			case POSITIVE_FIXNUM_0x34: return 1;
+			case POSITIVE_FIXNUM_0x35: return 1;
+			case POSITIVE_FIXNUM_0x36: return 1;
+			case POSITIVE_FIXNUM_0x37: return 1;
+			case POSITIVE_FIXNUM_0x38: return 1;
+			case POSITIVE_FIXNUM_0x39: return 1;
+			case POSITIVE_FIXNUM_0x3A: return 1;
+			case POSITIVE_FIXNUM_0x3B: return 1;
+			case POSITIVE_FIXNUM_0x3C: return 1;
+			case POSITIVE_FIXNUM_0x3D: return 1;
+			case POSITIVE_FIXNUM_0x3E: return 1;
+			case POSITIVE_FIXNUM_0x3F: return 1;
+
+			case POSITIVE_FIXNUM_0x40: return 1;
+			case POSITIVE_FIXNUM_0x41: return 1;
+			case POSITIVE_FIXNUM_0x42: return 1;
+			case POSITIVE_FIXNUM_0x43: return 1;
+			case POSITIVE_FIXNUM_0x44: return 1;
+			case POSITIVE_FIXNUM_0x45: return 1;
+			case POSITIVE_FIXNUM_0x46: return 1;
+			case POSITIVE_FIXNUM_0x47: return 1;
+			case POSITIVE_FIXNUM_0x48: return 1;
+			case POSITIVE_FIXNUM_0x49: return 1;
+			case POSITIVE_FIXNUM_0x4A: return 1;
+			case POSITIVE_FIXNUM_0x4B: return 1;
+			case POSITIVE_FIXNUM_0x4C: return 1;
+			case POSITIVE_FIXNUM_0x4D: return 1;
+			case POSITIVE_FIXNUM_0x4E: return 1;
+			case POSITIVE_FIXNUM_0x4F: return 1;
+
+			case POSITIVE_FIXNUM_0x50: return 1;
+			case POSITIVE_FIXNUM_0x51: return 1;
+			case POSITIVE_FIXNUM_0x52: return 1;
+			case POSITIVE_FIXNUM_0x53: return 1;
+			case POSITIVE_FIXNUM_0x54: return 1;
+			case POSITIVE_FIXNUM_0x55: return 1;
+			case POSITIVE_FIXNUM_0x56: return 1;
+			case POSITIVE_FIXNUM_0x57: return 1;
+			case POSITIVE_FIXNUM_0x58: return 1;
+			case POSITIVE_FIXNUM_0x59: return 1;
+			case POSITIVE_FIXNUM_0x5A: return 1;
+			case POSITIVE_FIXNUM_0x5B: return 1;
+			case POSITIVE_FIXNUM_0x5C: return 1;
+			case POSITIVE_FIXNUM_0x5D: return 1;
+			case POSITIVE_FIXNUM_0x5E: return 1;
+			case POSITIVE_FIXNUM_0x5F: return 1;
+
+			case POSITIVE_FIXNUM_0x60: return 1;
+			case POSITIVE_FIXNUM_0x61: return 1;
+			case POSITIVE_FIXNUM_0x62: return 1;
+			case POSITIVE_FIXNUM_0x63: return 1;
+			case POSITIVE_FIXNUM_0x64: return 1;
+			case POSITIVE_FIXNUM_0x65: return 1;
+			case POSITIVE_FIXNUM_0x66: return 1;
+			case POSITIVE_FIXNUM_0x67: return 1;
+			case POSITIVE_FIXNUM_0x68: return 1;
+			case POSITIVE_FIXNUM_0x69: return 1;
+			case POSITIVE_FIXNUM_0x6A: return 1;
+			case POSITIVE_FIXNUM_0x6B: return 1;
+			case POSITIVE_FIXNUM_0x6C: return 1;
+			case POSITIVE_FIXNUM_0x6D: return 1;
+			case POSITIVE_FIXNUM_0x6E: return 1;
+			case POSITIVE_FIXNUM_0x6F: return 1;
+
+			case POSITIVE_FIXNUM_0x70: return 1;
+			case POSITIVE_FIXNUM_0x71: return 1;
+			case POSITIVE_FIXNUM_0x72: return 1;
+			case POSITIVE_FIXNUM_0x73: return 1;
+			case POSITIVE_FIXNUM_0x74: return 1;
+			case POSITIVE_FIXNUM_0x75: return 1;
+			case POSITIVE_FIXNUM_0x76: return 1;
+			case POSITIVE_FIXNUM_0x77: return 1;
+			case POSITIVE_FIXNUM_0x78: return 1;
+			case POSITIVE_FIXNUM_0x79: return 1;
+			case POSITIVE_FIXNUM_0x7A: return 1;
+			case POSITIVE_FIXNUM_0x7B: return 1;
+			case POSITIVE_FIXNUM_0x7C: return 1;
+			case POSITIVE_FIXNUM_0x7D: return 1;
+			case POSITIVE_FIXNUM_0x7E: return 1;
+			case POSITIVE_FIXNUM_0x7F: return 1;
+#pragma endregion
+
+#pragma region FIX_MAP 0x80 - 0x8F
+			case FIX_MAP: return 1;
+			case FIX_MAP_0x1: return 1;
+			case FIX_MAP_0x2: return 1;
+			case FIX_MAP_0x3: return 1;
+			case FIX_MAP_0x4: return 1;
+			case FIX_MAP_0x5: return 1;
+			case FIX_MAP_0x6: return 1;
+			case FIX_MAP_0x7: return 1;
+			case FIX_MAP_0x8: return 1;
+			case FIX_MAP_0x9: return 1;
+			case FIX_MAP_0xA: return 1;
+			case FIX_MAP_0xB: return 1;
+			case FIX_MAP_0xC: return 1;
+			case FIX_MAP_0xD: return 1;
+			case FIX_MAP_0xE: return 1;
+			case FIX_MAP_0xF: return 1;
+#pragma endregion
+
+#pragma region FIX_ARRAY 0x90 - 0x9F
+			case FIX_ARRAY: return 1;
+			case FIX_ARRAY_0x1: return 1;
+			case FIX_ARRAY_0x2: return 1;
+			case FIX_ARRAY_0x3: return 1;
+			case FIX_ARRAY_0x4: return 1;
+			case FIX_ARRAY_0x5: return 1;
+			case FIX_ARRAY_0x6: return 1;
+			case FIX_ARRAY_0x7: return 1;
+			case FIX_ARRAY_0x8: return 1;
+			case FIX_ARRAY_0x9: return 1;
+			case FIX_ARRAY_0xA: return 1;
+			case FIX_ARRAY_0xB: return 1;
+			case FIX_ARRAY_0xC: return 1;
+			case FIX_ARRAY_0xD: return 1;
+			case FIX_ARRAY_0xE: return 1;
+			case FIX_ARRAY_0xF: return 1;
+#pragma endregion
+
+#pragma region FIX_STR 0xA0 - 0xBF
+			case FIX_STR: return 1;
+			case FIX_STR_0x01: return 1;
+			case FIX_STR_0x02: return 1;
+			case FIX_STR_0x03: return 1;
+			case FIX_STR_0x04: return 1;
+			case FIX_STR_0x05: return 1;
+			case FIX_STR_0x06: return 1;
+			case FIX_STR_0x07: return 1;
+			case FIX_STR_0x08: return 1;
+			case FIX_STR_0x09: return 1;
+			case FIX_STR_0x0A: return 1;
+			case FIX_STR_0x0B: return 1;
+			case FIX_STR_0x0C: return 1;
+			case FIX_STR_0x0D: return 1;
+			case FIX_STR_0x0E: return 1;
+			case FIX_STR_0x0F: return 1;
+			case FIX_STR_0x10: return 1;
+			case FIX_STR_0x11: return 1;
+			case FIX_STR_0x12: return 1;
+			case FIX_STR_0x13: return 1;
+			case FIX_STR_0x14: return 1;
+			case FIX_STR_0x15: return 1;
+			case FIX_STR_0x16: return 1;
+			case FIX_STR_0x17: return 1;
+			case FIX_STR_0x18: return 1;
+			case FIX_STR_0x19: return 1;
+			case FIX_STR_0x1A: return 1;
+			case FIX_STR_0x1B: return 1;
+			case FIX_STR_0x1C: return 1;
+			case FIX_STR_0x1D: return 1;
+			case FIX_STR_0x1E: return 1;
+			case FIX_STR_0x1F: return 1;
+#pragma endregion
+
+			case NIL: return 1;
+			case NEVER_USED: throw std::exception("no size");
+			case FALSE: return 1;
+			case TRUE: return 1;
+
+			case BIN8: return 1+1;
+			case BIN16: return 1+2;
+			case BIN32: return 1+4;
+
+			case EXT8: throw std::exception("not implemented");
+			case EXT16: throw std::exception("not implemented");
+			case EXT32: throw std::exception("not implemented");
+
+			case FLOAT: return 1;
+			case DOUBLE: return 1;
+			case UINT8: return 1;
+			case UINT16: return 1;
+			case UINT32: return 1;
+			case UINT64: return 1;
+			case INT8: return 1;
+			case INT16: return 1;
+			case INT32: return 1;
+			case INT64: return 1;
+
+			case FIX_EXT_1: throw std::exception("not implemented");
+			case FIX_EXT_2: throw std::exception("not implemented");
+			case FIX_EXT_4: throw std::exception("not implemented");
+			case FIX_EXT_8: throw std::exception("not implemented");
+			case FIX_EXT_16: throw std::exception("not implemented");
+
+			case STR8: return 1+1;
+			case STR16: return 1+2;
+			case STR32: return 1+4;
+
+			case ARRAY16: return 1+2;
+			case ARRAY32: return 1+4;
+			case MAP16: return 1+2;
+			case MAP32: return 1+4;
+
+#pragma region NEGATIVE_FIXNUM 0xE0 - 0xFF
+			case NEGATIVE_FIXNUM: return 1;
+			case NEGATIVE_FIXNUM_0x1F: return 1;
+			case NEGATIVE_FIXNUM_0x1E: return 1;
+			case NEGATIVE_FIXNUM_0x1D: return 1;
+			case NEGATIVE_FIXNUM_0x1C: return 1;
+			case NEGATIVE_FIXNUM_0x1B: return 1;
+			case NEGATIVE_FIXNUM_0x1A: return 1;
+			case NEGATIVE_FIXNUM_0x19: return 1;
+			case NEGATIVE_FIXNUM_0x18: return 1;
+			case NEGATIVE_FIXNUM_0x17: return 1;
+			case NEGATIVE_FIXNUM_0x16: return 1;
+			case NEGATIVE_FIXNUM_0x15: return 1;
+			case NEGATIVE_FIXNUM_0x14: return 1;
+			case NEGATIVE_FIXNUM_0x13: return 1;
+			case NEGATIVE_FIXNUM_0x12: return 1;
+			case NEGATIVE_FIXNUM_0x11: return 1;
+			case NEGATIVE_FIXNUM_0x10: return 1;
+			case NEGATIVE_FIXNUM_0x0F: return 1;
+			case NEGATIVE_FIXNUM_0x0E: return 1;
+			case NEGATIVE_FIXNUM_0x0D: return 1;
+			case NEGATIVE_FIXNUM_0x0C: return 1;
+			case NEGATIVE_FIXNUM_0x0B: return 1;
+			case NEGATIVE_FIXNUM_0x0A: return 1;
+			case NEGATIVE_FIXNUM_0x09: return 1;
+			case NEGATIVE_FIXNUM_0x08: return 1;
+			case NEGATIVE_FIXNUM_0x07: return 1;
+			case NEGATIVE_FIXNUM_0x06: return 1;
+			case NEGATIVE_FIXNUM_0x05: return 1;
+			case NEGATIVE_FIXNUM_0x04: return 1;
+			case NEGATIVE_FIXNUM_0x03: return 1;
+			case NEGATIVE_FIXNUM_0x02: return 1;
+			case NEGATIVE_FIXNUM_0x01: return 1;
+#pragma endregion
+
+			}
+
+			throw std::exception("not implemented");
+		}
+
+	public:
+		parser operator[](int index)const
+		{
+			auto offset = body_index();
+			auto current = parser(m_p + offset, m_size - offset);
+			for (int i = 0; i < index; ++i)
+			{
+				current = current.next();
+			}
+			return current;
+		}
+
+		int body_size()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+#pragma region POSITIVE_FIXNUM 0x00 - 0x7F
+			case POSITIVE_FIXNUM: return 0;
+			case POSITIVE_FIXNUM_0x01: return 0;
+			case POSITIVE_FIXNUM_0x02: return 0;
+			case POSITIVE_FIXNUM_0x03: return 0;
+			case POSITIVE_FIXNUM_0x04: return 0;
+			case POSITIVE_FIXNUM_0x05: return 0;
+			case POSITIVE_FIXNUM_0x06: return 0;
+			case POSITIVE_FIXNUM_0x07: return 0;
+			case POSITIVE_FIXNUM_0x08: return 0;
+			case POSITIVE_FIXNUM_0x09: return 0;
+			case POSITIVE_FIXNUM_0x0A: return 0;
+			case POSITIVE_FIXNUM_0x0B: return 0;
+			case POSITIVE_FIXNUM_0x0C: return 0;
+			case POSITIVE_FIXNUM_0x0D: return 0;
+			case POSITIVE_FIXNUM_0x0E: return 0;
+			case POSITIVE_FIXNUM_0x0F: return 0;
+
+			case POSITIVE_FIXNUM_0x10: return 0;
+			case POSITIVE_FIXNUM_0x11: return 0;
+			case POSITIVE_FIXNUM_0x12: return 0;
+			case POSITIVE_FIXNUM_0x13: return 0;
+			case POSITIVE_FIXNUM_0x14: return 0;
+			case POSITIVE_FIXNUM_0x15: return 0;
+			case POSITIVE_FIXNUM_0x16: return 0;
+			case POSITIVE_FIXNUM_0x17: return 0;
+			case POSITIVE_FIXNUM_0x18: return 0;
+			case POSITIVE_FIXNUM_0x19: return 0;
+			case POSITIVE_FIXNUM_0x1A: return 0;
+			case POSITIVE_FIXNUM_0x1B: return 0;
+			case POSITIVE_FIXNUM_0x1C: return 0;
+			case POSITIVE_FIXNUM_0x1D: return 0;
+			case POSITIVE_FIXNUM_0x1E: return 0;
+			case POSITIVE_FIXNUM_0x1F: return 0;
+
+			case POSITIVE_FIXNUM_0x20: return 0;
+			case POSITIVE_FIXNUM_0x21: return 0;
+			case POSITIVE_FIXNUM_0x22: return 0;
+			case POSITIVE_FIXNUM_0x23: return 0;
+			case POSITIVE_FIXNUM_0x24: return 0;
+			case POSITIVE_FIXNUM_0x25: return 0;
+			case POSITIVE_FIXNUM_0x26: return 0;
+			case POSITIVE_FIXNUM_0x27: return 0;
+			case POSITIVE_FIXNUM_0x28: return 0;
+			case POSITIVE_FIXNUM_0x29: return 0;
+			case POSITIVE_FIXNUM_0x2A: return 0;
+			case POSITIVE_FIXNUM_0x2B: return 0;
+			case POSITIVE_FIXNUM_0x2C: return 0;
+			case POSITIVE_FIXNUM_0x2D: return 0;
+			case POSITIVE_FIXNUM_0x2E: return 0;
+			case POSITIVE_FIXNUM_0x2F: return 0;
+
+			case POSITIVE_FIXNUM_0x30: return 0;
+			case POSITIVE_FIXNUM_0x31: return 0;
+			case POSITIVE_FIXNUM_0x32: return 0;
+			case POSITIVE_FIXNUM_0x33: return 0;
+			case POSITIVE_FIXNUM_0x34: return 0;
+			case POSITIVE_FIXNUM_0x35: return 0;
+			case POSITIVE_FIXNUM_0x36: return 0;
+			case POSITIVE_FIXNUM_0x37: return 0;
+			case POSITIVE_FIXNUM_0x38: return 0;
+			case POSITIVE_FIXNUM_0x39: return 0;
+			case POSITIVE_FIXNUM_0x3A: return 0;
+			case POSITIVE_FIXNUM_0x3B: return 0;
+			case POSITIVE_FIXNUM_0x3C: return 0;
+			case POSITIVE_FIXNUM_0x3D: return 0;
+			case POSITIVE_FIXNUM_0x3E: return 0;
+			case POSITIVE_FIXNUM_0x3F: return 0;
+
+			case POSITIVE_FIXNUM_0x40: return 0;
+			case POSITIVE_FIXNUM_0x41: return 0;
+			case POSITIVE_FIXNUM_0x42: return 0;
+			case POSITIVE_FIXNUM_0x43: return 0;
+			case POSITIVE_FIXNUM_0x44: return 0;
+			case POSITIVE_FIXNUM_0x45: return 0;
+			case POSITIVE_FIXNUM_0x46: return 0;
+			case POSITIVE_FIXNUM_0x47: return 0;
+			case POSITIVE_FIXNUM_0x48: return 0;
+			case POSITIVE_FIXNUM_0x49: return 0;
+			case POSITIVE_FIXNUM_0x4A: return 0;
+			case POSITIVE_FIXNUM_0x4B: return 0;
+			case POSITIVE_FIXNUM_0x4C: return 0;
+			case POSITIVE_FIXNUM_0x4D: return 0;
+			case POSITIVE_FIXNUM_0x4E: return 0;
+			case POSITIVE_FIXNUM_0x4F: return 0;
+
+			case POSITIVE_FIXNUM_0x50: return 0;
+			case POSITIVE_FIXNUM_0x51: return 0;
+			case POSITIVE_FIXNUM_0x52: return 0;
+			case POSITIVE_FIXNUM_0x53: return 0;
+			case POSITIVE_FIXNUM_0x54: return 0;
+			case POSITIVE_FIXNUM_0x55: return 0;
+			case POSITIVE_FIXNUM_0x56: return 0;
+			case POSITIVE_FIXNUM_0x57: return 0;
+			case POSITIVE_FIXNUM_0x58: return 0;
+			case POSITIVE_FIXNUM_0x59: return 0;
+			case POSITIVE_FIXNUM_0x5A: return 0;
+			case POSITIVE_FIXNUM_0x5B: return 0;
+			case POSITIVE_FIXNUM_0x5C: return 0;
+			case POSITIVE_FIXNUM_0x5D: return 0;
+			case POSITIVE_FIXNUM_0x5E: return 0;
+			case POSITIVE_FIXNUM_0x5F: return 0;
+
+			case POSITIVE_FIXNUM_0x60: return 0;
+			case POSITIVE_FIXNUM_0x61: return 0;
+			case POSITIVE_FIXNUM_0x62: return 0;
+			case POSITIVE_FIXNUM_0x63: return 0;
+			case POSITIVE_FIXNUM_0x64: return 0;
+			case POSITIVE_FIXNUM_0x65: return 0;
+			case POSITIVE_FIXNUM_0x66: return 0;
+			case POSITIVE_FIXNUM_0x67: return 0;
+			case POSITIVE_FIXNUM_0x68: return 0;
+			case POSITIVE_FIXNUM_0x69: return 0;
+			case POSITIVE_FIXNUM_0x6A: return 0;
+			case POSITIVE_FIXNUM_0x6B: return 0;
+			case POSITIVE_FIXNUM_0x6C: return 0;
+			case POSITIVE_FIXNUM_0x6D: return 0;
+			case POSITIVE_FIXNUM_0x6E: return 0;
+			case POSITIVE_FIXNUM_0x6F: return 0;
+
+			case POSITIVE_FIXNUM_0x70: return 0;
+			case POSITIVE_FIXNUM_0x71: return 0;
+			case POSITIVE_FIXNUM_0x72: return 0;
+			case POSITIVE_FIXNUM_0x73: return 0;
+			case POSITIVE_FIXNUM_0x74: return 0;
+			case POSITIVE_FIXNUM_0x75: return 0;
+			case POSITIVE_FIXNUM_0x76: return 0;
+			case POSITIVE_FIXNUM_0x77: return 0;
+			case POSITIVE_FIXNUM_0x78: return 0;
+			case POSITIVE_FIXNUM_0x79: return 0;
+			case POSITIVE_FIXNUM_0x7A: return 0;
+			case POSITIVE_FIXNUM_0x7B: return 0;
+			case POSITIVE_FIXNUM_0x7C: return 0;
+			case POSITIVE_FIXNUM_0x7D: return 0;
+			case POSITIVE_FIXNUM_0x7E: return 0;
+			case POSITIVE_FIXNUM_0x7F: return 0;
+#pragma endregion
+
+#pragma region FIX_MAP 0x80 - 0x8F
+			case FIX_MAP: throw std::exception("no size");
+			case FIX_MAP_0x1: throw std::exception("no size");
+			case FIX_MAP_0x2: throw std::exception("no size");
+			case FIX_MAP_0x3: throw std::exception("no size");
+			case FIX_MAP_0x4: throw std::exception("no size");
+			case FIX_MAP_0x5: throw std::exception("no size");
+			case FIX_MAP_0x6: throw std::exception("no size");
+			case FIX_MAP_0x7: throw std::exception("no size");
+			case FIX_MAP_0x8: throw std::exception("no size");
+			case FIX_MAP_0x9: throw std::exception("no size");
+			case FIX_MAP_0xA: throw std::exception("no size");
+			case FIX_MAP_0xB: throw std::exception("no size");
+			case FIX_MAP_0xC: throw std::exception("no size");
+			case FIX_MAP_0xD: throw std::exception("no size");
+			case FIX_MAP_0xE: throw std::exception("no size");
+			case FIX_MAP_0xF: throw std::exception("no size");
+#pragma endregion
+
+#pragma region FIX_ARRAY 0x90 - 0x9F
+			case FIX_ARRAY: throw std::exception("no size");
+			case FIX_ARRAY_0x1: throw std::exception("no size");
+			case FIX_ARRAY_0x2: throw std::exception("no size");
+			case FIX_ARRAY_0x3: throw std::exception("no size");
+			case FIX_ARRAY_0x4: throw std::exception("no size");
+			case FIX_ARRAY_0x5: throw std::exception("no size");
+			case FIX_ARRAY_0x6: throw std::exception("no size");
+			case FIX_ARRAY_0x7: throw std::exception("no size");
+			case FIX_ARRAY_0x8: throw std::exception("no size");
+			case FIX_ARRAY_0x9: throw std::exception("no size");
+			case FIX_ARRAY_0xA: throw std::exception("no size");
+			case FIX_ARRAY_0xB: throw std::exception("no size");
+			case FIX_ARRAY_0xC: throw std::exception("no size");
+			case FIX_ARRAY_0xD: throw std::exception("no size");
+			case FIX_ARRAY_0xE: throw std::exception("no size");
+			case FIX_ARRAY_0xF: throw std::exception("no size");
+#pragma endregion
+
+#pragma region FIX_STR 0xA0 - 0xBF
+			case FIX_STR: return 0;
+			case FIX_STR_0x01: return 1;
+			case FIX_STR_0x02: return 2;
+			case FIX_STR_0x03: return 3;
+			case FIX_STR_0x04: return 4;
+			case FIX_STR_0x05: return 5;
+			case FIX_STR_0x06: return 6;
+			case FIX_STR_0x07: return 7;
+			case FIX_STR_0x08: return 8;
+			case FIX_STR_0x09: return 9;
+			case FIX_STR_0x0A: return 10;
+			case FIX_STR_0x0B: return 11;
+			case FIX_STR_0x0C: return 12;
+			case FIX_STR_0x0D: return 13;
+			case FIX_STR_0x0E: return 14;
+			case FIX_STR_0x0F: return 15;
+			case FIX_STR_0x10: return 16;
+			case FIX_STR_0x11: return 17;
+			case FIX_STR_0x12: return 18;
+			case FIX_STR_0x13: return 19;
+			case FIX_STR_0x14: return 20;
+			case FIX_STR_0x15: return 21;
+			case FIX_STR_0x16: return 22;
+			case FIX_STR_0x17: return 23;
+			case FIX_STR_0x18: return 24;
+			case FIX_STR_0x19: return 25;
+			case FIX_STR_0x1A: return 26;
+			case FIX_STR_0x1B: return 27;
+			case FIX_STR_0x1C: return 28;
+			case FIX_STR_0x1D: return 29;
+			case FIX_STR_0x1E: return 30;
+			case FIX_STR_0x1F: return 31;
+#pragma endregion
+
+			case NIL: return 0;
+			case NEVER_USED: throw std::exception("no size");
+			case FALSE: return 0;
+			case TRUE: return 0;
+
+			case BIN8: return body_number<std::uint8_t>();
+			case BIN16: return body_number<std::uint16_t>();
+			case BIN32: return body_number<std::uint32_t>();
+
+			case EXT8: throw std::exception("not implemented");
+			case EXT16: throw std::exception("not implemented");
+			case EXT32: throw std::exception("not implemented");
+
+			case FLOAT: return 4;
+			case DOUBLE: return 8;
+			case UINT8: return 1;
+			case UINT16: return 2;
+			case UINT32: return 4;
+			case UINT64: return 8;
+			case INT8: return 1;
+			case INT16: return 2;
+			case INT32: return 4;
+			case INT64: return 8;
+
+			case FIX_EXT_1: throw std::exception("not implemented");
+			case FIX_EXT_2: throw std::exception("not implemented");
+			case FIX_EXT_4: throw std::exception("not implemented");
+			case FIX_EXT_8: throw std::exception("not implemented");
+			case FIX_EXT_16: throw std::exception("not implemented");
+
+			case STR8: return body_number<std::uint8_t>();
+			case STR16: return body_number<std::uint16_t>();
+			case STR32: return body_number<std::uint32_t>();
+
+			case ARRAY16: throw std::exception("no size");
+			case ARRAY32: throw std::exception("no size");
+			case MAP16: throw std::exception("no size");
+			case MAP32: throw std::exception("no size");
+
+#pragma region NEGATIVE_FIXNUM 0xE0 - 0xFF
+			case NEGATIVE_FIXNUM: return 0;
+			case NEGATIVE_FIXNUM_0x1F: return 0;
+			case NEGATIVE_FIXNUM_0x1E: return 0;
+			case NEGATIVE_FIXNUM_0x1D: return 0;
+			case NEGATIVE_FIXNUM_0x1C: return 0;
+			case NEGATIVE_FIXNUM_0x1B: return 0;
+			case NEGATIVE_FIXNUM_0x1A: return 0;
+			case NEGATIVE_FIXNUM_0x19: return 0;
+			case NEGATIVE_FIXNUM_0x18: return 0;
+			case NEGATIVE_FIXNUM_0x17: return 0;
+			case NEGATIVE_FIXNUM_0x16: return 0;
+			case NEGATIVE_FIXNUM_0x15: return 0;
+			case NEGATIVE_FIXNUM_0x14: return 0;
+			case NEGATIVE_FIXNUM_0x13: return 0;
+			case NEGATIVE_FIXNUM_0x12: return 0;
+			case NEGATIVE_FIXNUM_0x11: return 0;
+			case NEGATIVE_FIXNUM_0x10: return 0;
+			case NEGATIVE_FIXNUM_0x0F: return 0;
+			case NEGATIVE_FIXNUM_0x0E: return 0;
+			case NEGATIVE_FIXNUM_0x0D: return 0;
+			case NEGATIVE_FIXNUM_0x0C: return 0;
+			case NEGATIVE_FIXNUM_0x0B: return 0;
+			case NEGATIVE_FIXNUM_0x0A: return 0;
+			case NEGATIVE_FIXNUM_0x09: return 0;
+			case NEGATIVE_FIXNUM_0x08: return 0;
+			case NEGATIVE_FIXNUM_0x07: return 0;
+			case NEGATIVE_FIXNUM_0x06: return 0;
+			case NEGATIVE_FIXNUM_0x05: return 0;
+			case NEGATIVE_FIXNUM_0x04: return 0;
+			case NEGATIVE_FIXNUM_0x03: return 0;
+			case NEGATIVE_FIXNUM_0x02: return 0;
+			case NEGATIVE_FIXNUM_0x01: return 0;
+#pragma endregion
+			}
+
+			throw std::exception("not implemented");
+		}
+
+		parser next()const
+		{
+			if (is_array())
+			{
+				auto offset = body_index();
+				auto current = parser(m_p + offset, m_size - offset);
+				auto item_count = count();
+				for (int i = 0; i < item_count; ++i)
+				{
+					current = current.next();
+				}
+				return current;
+			}
+			else {
+
+				auto offset = body_index() + body_size();
+				auto current = parser(m_p + offset, m_size - offset);
+				return current;
+
+			}
 		}
 	};
 }
