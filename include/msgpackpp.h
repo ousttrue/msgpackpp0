@@ -1503,13 +1503,7 @@ namespace msgpackpp {
 	{
 		return serialize(p, t);
 	}
-	template<typename T>
-	packer& serialize(packer &p, const T &t)
-	{
-		auto msg = std::string("serialize: not implemented: ") + typeid(T).name();
-		throw std::exception(msg.c_str());
-	}
-	template<>
+
 	packer& serialize(packer &p, const int &t)
 	{
 		return p.pack_integer(t);
