@@ -472,6 +472,32 @@ TEST_CASE("bin32")
 	REQUIRE(buf == parsed.get_binary());
 }
 
+/// fixarray stores an array whose length is upto 15 elements:
+/// +--------+~~~~~~~~~~~~~~~~~+
+/// |1001XXXX|    N objects    |
+/// +--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("fixarray")
+{
+	// packing
+	auto packer = msgpackpp::packer();
+	packer.pack_array(3)
+		<< 1 << "str" << true
+		;
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(msgpackpp::pack_type::FIX_ARRAY_0x3==p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_array());
+
+	REQUIRE(3==parsed.count());
+	REQUIRE(1==parsed[0].get_number<int>());
+	REQUIRE(std::string("str")==parsed[1].get_string());
+	REQUIRE(true==parsed[2].get_bool());
+}
+
 /// array 16 stores an array whose length is upto (2^16)-1 elements:
 /// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
 /// |  0xdc  |YYYYYYYY|YYYYYYYY|    N objects    |
@@ -531,4 +557,109 @@ TEST_CASE("array32")
 	for (auto i = 0; i < parsed.count(); i+=1000) {
 		REQUIRE(i == parsed[i].get_number<int>());
 	}
+}
+
+/// fixmap stores a map whose length is upto 15 elements
+/// +--------+~~~~~~~~~~~~~~~~~+
+/// |1000XXXX|   N*2 objects   |
+/// +--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("fixmap")
+{
+	// packing
+	auto packer = msgpackpp::packer();
+	packer.pack_map(3)
+		<< "key1" << 0
+		<< "key2" << 1
+		<< "key3" << 2
+		;
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(msgpackpp::FIX_MAP_0x3 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_map());
+
+	REQUIRE(3 == parsed.count());
+
+	auto count = parsed.count();
+	for (auto i = 0; i < count; ++i) {
+		std::stringstream ss;
+		ss << "key" << (i + 1);
+		REQUIRE(ss.str() == parsed[i * 2].get_string());
+		REQUIRE(i == parsed[i * 2 + 1].get_number<int>());
+	}
+
+	REQUIRE(0 == parsed["key1"].get_number<int>());
+	REQUIRE(1 == parsed["key2"].get_number<int>());
+	REQUIRE(2 == parsed["key3"].get_number<int>());
+}
+
+/// map 16 stores a map whose length is upto (2^16)-1 elements
+/// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+/// |  0xde  |YYYYYYYY|YYYYYYYY|   N*2 objects   |
+/// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("map16")
+{
+	// packing
+	auto packer = msgpackpp::packer();
+	packer.pack_map(17)
+		<< "key1" << 0 << "key2" << 1 << "key3" << 2 << "key4" << 3
+		<< "key5" << 4 << "key6" << 5 << "key7" << 6 << "key8" << 7
+		<< "key9" << 8 << "key10" << 9 << "key11" << 10 << "key12" << 11
+		<< "key13" << 12 << "key14" << 13 << "key15" << 14 << "key16" << 15
+		<< "key17" << 16
+		;
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(0xde==p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_map());
+
+	// map
+	REQUIRE(17==parsed.count());
+
+	for (auto i = 0; i<17; ++i) {
+		std::stringstream ss;
+		ss << "key" << (i + 1);
+		REQUIRE(ss.str()==parsed[i*2].get_string());
+		REQUIRE(i==parsed[i*2+1].get_number<int>());
+	}
+}
+
+/// map 32 stores a map whose length is upto (2^32)-1 elements
+/// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+/// |  0xdf  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|   N*2 objects   |
+/// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+TEST_CASE("map32")
+{
+	// packing
+	auto packer=msgpackpp::packer();
+	packer.pack_map(0xFFFF + 1);
+	for (int i = 0; i < 0xFFFF+1; ++i) {
+		std::stringstream ss;
+		ss << "key" << (i + 1);
+		packer << ss.str() << i;
+	}
+	auto p = packer.get_payload();
+
+	// check
+	REQUIRE(0xdf==p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.is_map());
+
+	// map
+	REQUIRE(0xFFFF+1 == parsed.count());
+
+	REQUIRE(0 == parsed["key1"].get_number<int>());
+	REQUIRE(10000 == parsed["key10001"].get_number<int>());
+	REQUIRE(20000 == parsed["key20001"].get_number<int>());
+	REQUIRE(40000 == parsed["key40001"].get_number<int>());
+	REQUIRE(0xFFFF == parsed["key65536"].get_number<int>());
 }

@@ -359,7 +359,7 @@ namespace msgpackpp {
 					push_number_reverse(static_cast<std::int64_t>(n));
 				}
 				else {
-					throw std::exception("not implemented");
+					throw std::exception("pack_integer: not implemented");
 				}
 			}
 			else {
@@ -390,7 +390,7 @@ namespace msgpackpp {
 					push_number_reverse(static_cast<std::uint64_t>(n));
 				}
 				else {
-					throw std::exception("not implemented");
+					throw std::exception("pack_integer: not implemented");
 				}
 			}
 			return *this;
@@ -454,7 +454,7 @@ namespace msgpackpp {
 				push(r);
 			}
 			else {
-				throw std::exception("not implemented");
+				throw std::exception("pack_str: not implemented");
 			}
 			return *this;
 		}
@@ -482,67 +482,57 @@ namespace msgpackpp {
 				push(r);
 			}
 			else {
-				throw std::exception("not implemented");
+				throw std::exception("pack_bin: not implemented");
 			}
 			return *this;
 		}
 
 		packer& pack_array(int n)
 		{
-			if (n < 16)
+			if (n <= 15)
 			{
 				m_buffer.push_back(pack_type::FIX_ARRAY | static_cast<std::uint8_t>(n));
 			}
-			else if (n < std::numeric_limits<std::uint16_t>::max())
+			else if (n <= std::numeric_limits<std::uint16_t>::max())
 			{
 				m_buffer.push_back(pack_type::ARRAY16);
 				push_number_reverse(static_cast<std::uint16_t>(n));
 			}
-			else if (n < std::numeric_limits<std::uint32_t>::max())
+			else if (n <= std::numeric_limits<std::uint32_t>::max())
 			{
 				m_buffer.push_back(pack_type::ARRAY32);
 				push_number_reverse(static_cast<std::uint32_t>(n));
 			}
 			else {
-				throw std::exception("not implemented");
+				throw std::exception("pack_array: not implemented");
+			}
+			return *this;
+		}
+
+		packer& pack_map(int n)
+		{
+			if (n <= 15)
+			{
+				m_buffer.push_back(pack_type::FIX_MAP | static_cast<std::uint8_t>(n));
+			}
+			else if (n <= std::numeric_limits<std::uint16_t>::max())
+			{
+				m_buffer.push_back(pack_type::MAP16);
+				push_number_reverse(static_cast<std::uint16_t>(n));
+			}
+			else if (n <= std::numeric_limits<std::uint32_t>::max())
+			{
+				m_buffer.push_back(pack_type::MAP32);
+				push_number_reverse(static_cast<std::uint32_t>(n));
+			}
+			else {
+				throw std::exception("pack_map: not implemented");
 			}
 			return *this;
 		}
 
 		const std::vector<std::uint8_t> &get_payload()const { return m_buffer; }
 	};
-
-	template<typename T>
-	packer& operator<<(packer &p, const T &t)
-	{
-		return serialize(p, t);
-	}
-	template<typename T>
-	packer& serialize(packer &p, const T &t)
-	{
-		throw std::exception("not implemented");
-	}
-	template<>
-	packer& serialize(packer &p, const int &t)
-	{
-		return p.pack_integer(t);
-	}
-	packer& serialize(packer &p, const char* t)
-	{
-		return p.pack_str(t);
-	}
-	packer& serialize(packer &p, const bool &t)
-	{
-		return p.pack_bool(t);
-	}
-	packer& serialize(packer &p, const float &t)
-	{
-		return p.pack_float(t);
-	}
-	packer& serialize(packer &p, const double &t)
-	{
-		return p.pack_double(t);
-	}
 
 	class parser
 	{
@@ -635,7 +625,7 @@ namespace msgpackpp {
 			case pack_type::FIX_STR_0x1F: return std::string(m_p + 1, m_p + 32);
 			}
 
-			throw std::exception("not implemented");
+			throw std::exception("not string");
 		}
 
 		std::vector<std::uint8_t> get_binary()const
@@ -648,7 +638,7 @@ namespace msgpackpp {
 			case pack_type::BIN8: return std::vector<std::uint8_t>(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
 			}
 
-			throw std::exception("not implemented");
+			throw std::exception("not binary");
 		}
 
 		template<typename T>
@@ -706,7 +696,7 @@ namespace msgpackpp {
 			case pack_type::NEGATIVE_FIXNUM_0x01: return -1;
 			}
 
-			throw std::exception("not implemented");
+			throw std::exception("not number");
 		}
 #pragma endregion
 
@@ -739,6 +729,80 @@ namespace msgpackpp {
 			return false;
 		}
 
+		bool is_map()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::FIX_MAP:
+			case pack_type::FIX_MAP_0x1:
+			case pack_type::FIX_MAP_0x2:
+			case pack_type::FIX_MAP_0x3:
+			case pack_type::FIX_MAP_0x4:
+			case pack_type::FIX_MAP_0x5:
+			case pack_type::FIX_MAP_0x6:
+			case pack_type::FIX_MAP_0x7:
+			case pack_type::FIX_MAP_0x8:
+			case pack_type::FIX_MAP_0x9:
+			case pack_type::FIX_MAP_0xA:
+			case pack_type::FIX_MAP_0xB:
+			case pack_type::FIX_MAP_0xC:
+			case pack_type::FIX_MAP_0xD:
+			case pack_type::FIX_MAP_0xE:
+			case pack_type::FIX_MAP_0xF:
+			case pack_type::MAP16:
+			case pack_type::MAP32:
+				return true;
+			}
+
+			return false;
+		}
+
+		bool is_string()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::STR32: return true;
+			case pack_type::STR16: return true;
+			case pack_type::STR8: return true;
+			case pack_type::FIX_STR: return true;
+			case pack_type::FIX_STR_0x01: return true;
+			case pack_type::FIX_STR_0x02: return true;
+			case pack_type::FIX_STR_0x03: return true;
+			case pack_type::FIX_STR_0x04: return true;
+			case pack_type::FIX_STR_0x05: return true;
+			case pack_type::FIX_STR_0x06: return true;
+			case pack_type::FIX_STR_0x07: return true;
+			case pack_type::FIX_STR_0x08: return true;
+			case pack_type::FIX_STR_0x09: return true;
+			case pack_type::FIX_STR_0x0A: return true;
+			case pack_type::FIX_STR_0x0B: return true;
+			case pack_type::FIX_STR_0x0C: return true;
+			case pack_type::FIX_STR_0x0D: return true;
+			case pack_type::FIX_STR_0x0E: return true;
+			case pack_type::FIX_STR_0x0F: return true;
+			case pack_type::FIX_STR_0x10: return true;
+			case pack_type::FIX_STR_0x11: return true;
+			case pack_type::FIX_STR_0x12: return true;
+			case pack_type::FIX_STR_0x13: return true;
+			case pack_type::FIX_STR_0x14: return true;
+			case pack_type::FIX_STR_0x15: return true;
+			case pack_type::FIX_STR_0x16: return true;
+			case pack_type::FIX_STR_0x17: return true;
+			case pack_type::FIX_STR_0x18: return true;
+			case pack_type::FIX_STR_0x19: return true;
+			case pack_type::FIX_STR_0x1A: return true;
+			case pack_type::FIX_STR_0x1B: return true;
+			case pack_type::FIX_STR_0x1C: return true;
+			case pack_type::FIX_STR_0x1D: return true;
+			case pack_type::FIX_STR_0x1E: return true;
+			case pack_type::FIX_STR_0x1F: return true;
+			}
+
+			return false;
+		}
+
 		int count()const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
@@ -762,6 +826,24 @@ namespace msgpackpp {
 			case pack_type::FIX_ARRAY_0xF:return 15;
 			case pack_type::ARRAY16: return body_number<std::uint16_t>();
 			case pack_type::ARRAY32: return body_number<std::uint32_t>();
+			case pack_type::FIX_MAP: return 0;
+			case pack_type::FIX_MAP_0x1: return 1;
+			case pack_type::FIX_MAP_0x2:return 2;
+			case pack_type::FIX_MAP_0x3:return 3;
+			case pack_type::FIX_MAP_0x4:return 4;
+			case pack_type::FIX_MAP_0x5:return 5;
+			case pack_type::FIX_MAP_0x6:return 6;
+			case pack_type::FIX_MAP_0x7:return 7;
+			case pack_type::FIX_MAP_0x8:return 8;
+			case pack_type::FIX_MAP_0x9:return 9;
+			case pack_type::FIX_MAP_0xA:return 10;
+			case pack_type::FIX_MAP_0xB:return 11;
+			case pack_type::FIX_MAP_0xC:return 12;
+			case pack_type::FIX_MAP_0xD:return 13;
+			case pack_type::FIX_MAP_0xE:return 14;
+			case pack_type::FIX_MAP_0xF:return 15;
+			case pack_type::MAP16: return body_number<std::uint16_t>();
+			case pack_type::MAP32: return body_number<std::uint32_t>();
 			}
 
 			throw std::exception("not array or map");
@@ -1073,6 +1155,29 @@ namespace msgpackpp {
 				current = current.next();
 			}
 			return current;
+		}
+
+		// string key accessor for map
+		parser operator[](const std::string &key)const
+		{
+			auto offset = body_index();
+			auto current = parser(m_p + offset, m_size - offset);
+			auto item_count = count();
+			for (int i = 0; i < item_count; ++i)
+			{
+				// key
+				if (current.is_string())
+				{
+					if (current.get_string() == key) {
+						return current.next();
+					}
+				}
+
+				current = current.next();
+				current = current.next();
+			}
+
+			throw std::exception("not found");
 		}
 
 		int body_size()const
@@ -1391,4 +1496,46 @@ namespace msgpackpp {
 			}
 		}
 	};
+
+#pragma region serializer
+	template<typename T>
+	packer& operator<<(packer &p, const T &t)
+	{
+		return serialize(p, t);
+	}
+	template<typename T>
+	packer& serialize(packer &p, const T &t)
+	{
+		auto msg = std::string("serialize: not implemented: ") + typeid(T).name();
+		throw std::exception(msg.c_str());
+	}
+	template<>
+	packer& serialize(packer &p, const int &t)
+	{
+		return p.pack_integer(t);
+	}
+	packer& serialize(packer &p, const char* t)
+	{
+		return p.pack_str(t);
+	}
+	packer& serialize(packer &p, const std::string &t)
+	{
+		return p.pack_str(t);
+	}
+	packer& serialize(packer &p, const bool &t)
+	{
+		return p.pack_bool(t);
+	}
+	packer& serialize(packer &p, const float &t)
+	{
+		return p.pack_float(t);
+	}
+	packer& serialize(packer &p, const double &t)
+	{
+		return p.pack_double(t);
+	}
+#pragma endregion
+
+#pragma region deserializer
+#pragma endregion
 }
