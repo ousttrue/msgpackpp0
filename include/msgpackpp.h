@@ -451,6 +451,32 @@ namespace msgpackpp {
 			return *this;
 		}
 
+		packer& pack_bin(const void *data, int size)
+		{
+			if (size <= std::numeric_limits<std::uint8_t>::max())
+			{
+				m_buffer.push_back(pack_type::BIN8);
+				m_buffer.push_back(static_cast<std::uint8_t>(size));
+				push(data, size);
+			}
+			else if (size <= std::numeric_limits<std::uint16_t>::max())
+			{
+				m_buffer.push_back(pack_type::BIN16);
+				push_number_reverse(static_cast<std::uint16_t>(size));
+				push(data, size);
+			}
+			else if (size <= std::numeric_limits<std::uint32_t>::max())
+			{
+				m_buffer.push_back(pack_type::BIN32);
+				push_number_reverse(static_cast<std::uint32_t>(size));
+				push(data, size);
+			}
+			else {
+				throw std::exception("not implemented");
+			}
+			return *this;
+		}
+
 		const std::vector<std::uint8_t> &get_payload()const { return m_buffer; }
 	};
 
@@ -530,6 +556,19 @@ namespace msgpackpp {
 			case pack_type::FIX_STR_0x1D: return std::string(m_p + 1, m_p + 30);
 			case pack_type::FIX_STR_0x1E: return std::string(m_p + 1, m_p + 31);
 			case pack_type::FIX_STR_0x1F: return std::string(m_p + 1, m_p + 32);
+			}
+
+			throw std::exception("not implemented");
+		}
+
+		std::vector<std::uint8_t> get_binary()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::BIN32: return std::vector<std::uint8_t>(m_p + 1 + 4, m_p + 1 + 4 + body_number<std::uint32_t>());
+			case pack_type::BIN16: return std::vector<std::uint8_t>(m_p + 1 + 2, m_p + 1 + 2 + body_number<std::uint16_t>());
+			case pack_type::BIN8: return std::vector<std::uint8_t>(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
 			}
 
 			throw std::exception("not implemented");

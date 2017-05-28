@@ -404,3 +404,70 @@ TEST_CASE("str32")
 	auto parsed = msgpackpp::parser(p.data(), p.size());
 	REQUIRE(parsed.get_string() == std::string(buf, buf + len));
 }
+
+/// bin 8 stores a byte array whose length is upto (2^8)-1 bytes:
+/// +--------+--------+========+
+/// |  0xc4  |XXXXXXXX|  data  |
+/// +--------+--------+========+
+TEST_CASE("bin8")
+{
+	std::vector<unsigned char> buf;
+	buf.push_back(0);
+
+	// packing
+	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+
+	// check
+	REQUIRE(2 + 1 == p.size());
+	REQUIRE(0xc4 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(buf == parsed.get_binary());
+}
+
+/// bin 16 stores a byte array whose length is upto (2^16)-1 bytes:
+/// +--------+--------+--------+========+
+/// |  0xc5  |YYYYYYYY|YYYYYYYY|  data  |
+/// +--------+--------+--------+========+
+TEST_CASE("bin16")
+{
+	std::vector<unsigned char> buf;
+	for (int i = 0; i<0xFF + 1; ++i) {
+		buf.push_back(i % 0xFF);
+	}
+
+	// packing
+	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+
+	// check
+	REQUIRE(3 + 0xFF + 1 == p.size());
+	REQUIRE(0xc5 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(buf == parsed.get_binary());
+}
+
+/// bin 32 stores a byte array whose length is upto (2^32)-1 bytes:
+/// +--------+--------+--------+--------+--------+========+
+/// |  0xc6  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|  data  |
+/// +--------+--------+--------+--------+--------+========+
+TEST_CASE("bin32")
+{
+	std::vector<unsigned char> buf;
+	for (int i = 0; i<0xFFFF + 1; ++i) {
+		buf.push_back(i % 0xFF);
+	}
+
+	// packing
+	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+
+	// check
+	REQUIRE(5 + 0xFFFF + 1 == p.size());
+	REQUIRE(0xc6 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(buf == parsed.get_binary());
+}
