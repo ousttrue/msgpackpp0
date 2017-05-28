@@ -308,3 +308,99 @@ TEST_CASE("float64")
 	auto parsed = msgpackpp::parser(p.data(), p.size());
 	REQUIRE(value==parsed.get_number<double>());
 }
+
+/// fixstr stores a byte array whose length is upto 31 bytes:
+/// +--------+========+
+/// |101XXXXX|  data  |
+/// +--------+========+
+TEST_CASE("fixstr")
+{
+	auto str = "abc";
+
+	// packing
+	auto p = msgpackpp::packer().pack_str(str).get_payload();
+
+	// check
+	REQUIRE((1 + 3) == p.size());
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.get_string()==str);
+}
+
+/// str 8 stores a byte array whose length is upto (2^8)-1 bytes:
+/// +--------+--------+========+
+/// |  0xd9  |YYYYYYYY|  data  |
+/// +--------+--------+========+
+TEST_CASE("str8")
+{
+	auto str =
+		"0123456789"
+		"0123456789"
+		"0123456789"
+		"01"
+		;
+
+	// packing
+	auto p = msgpackpp::packer().pack_str(str).get_payload();
+
+	// check
+	REQUIRE((2 + 32)==p.size());
+	REQUIRE(0xd9==p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	auto parsed_str = parsed.get_string();
+	REQUIRE(parsed_str == str);
+}
+
+/// str 16 stores a byte array whose length is upto (2^16)-1 bytes:
+/// +--------+--------+--------+========+
+/// |  0xda  |ZZZZZZZZ|ZZZZZZZZ|  data  |
+/// +--------+--------+--------+========+
+TEST_CASE("str16")
+{
+	auto str =
+		"0123456789" "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+		"0123456789" "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+		"0123456789" "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+		"0123456789" "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+		"0123456789" "0123456"
+		;
+
+	// packing
+	auto p = msgpackpp::packer().pack_str(str).get_payload();
+
+	// check
+	REQUIRE((3 + 257)==p.size());
+	REQUIRE(0xda==p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.get_string() == str);
+}
+
+/// str 32 stores a byte array whose length is upto (2^32)-1 bytes:
+/// +--------+--------+--------+--------+--------+========+
+/// |  0xdb  |AAAAAAAA|AAAAAAAA|AAAAAAAA|AAAAAAAA|  data  |
+/// +--------+--------+--------+--------+--------+========+
+TEST_CASE("str32")
+{
+	auto len = (0xFFFF + 2);
+	char buf[0xFFFF + 2] = {};
+	for (int i = 0; i<len; ++i)
+	{
+		buf[i]=('0' + (i % 10));
+	}
+
+	// packing
+	auto p = msgpackpp::packer().pack_str(std::string(buf, buf+len)).get_payload();
+
+	// check
+	REQUIRE(0xdb == p[0]);
+	REQUIRE((5 + len) == p.size());
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+	REQUIRE(parsed.get_string() == std::string(buf, buf + len));
+}

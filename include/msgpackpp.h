@@ -297,6 +297,25 @@ namespace msgpackpp {
 	{
 		std::vector<std::uint8_t> m_buffer;
 
+	private:
+		void push(const void *p, int size)
+		{
+			auto lastsize = m_buffer.size();
+			m_buffer.resize(lastsize + size);
+			memcpy(&m_buffer[lastsize], p, size);
+		}
+
+		template<typename T>
+		void push_number_reverse(T n)
+		{
+			auto size = sizeof(T);
+			auto _p = reinterpret_cast<std::uint8_t*>(&n) + (size - 1);
+			for (int i = 0; i < size; ++i, --_p)
+			{
+				m_buffer.push_back(*_p);
+			}
+		}
+
 	public:
 		packer& pack_nil()
 		{
@@ -323,33 +342,19 @@ namespace msgpackpp {
 				{
 					m_buffer.push_back(pack_type::INT16);
 					// network byteorder
-					auto _n = static_cast<std::int16_t>(n);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::int16_t>(n));
 				}
 				else if (n >= std::numeric_limits<std::int32_t>::min())
 				{
 					m_buffer.push_back(pack_type::INT32);
 					// network byteorder
-					auto _n = static_cast<std::int32_t>(n);
-					m_buffer.push_back((_n >> 24) & 0xff);
-					m_buffer.push_back((_n >> 16) & 0xff);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::int32_t>(n));
 				}
 				else if (n >= std::numeric_limits<std::int64_t>::min())
 				{
 					m_buffer.push_back(pack_type::INT64);
 					// network byteorder
-					auto _n = static_cast<std::int64_t>(n);
-					m_buffer.push_back((_n >> 56) & 0xff);
-					m_buffer.push_back((_n >> 48) & 0xff);
-					m_buffer.push_back((_n >> 40) & 0xff);
-					m_buffer.push_back((_n >> 32) & 0xff);
-					m_buffer.push_back((_n >> 24) & 0xff);
-					m_buffer.push_back((_n >> 16) & 0xff);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::int64_t>(n));
 				}
 				else {
 					throw std::exception("not implemented");
@@ -369,32 +374,18 @@ namespace msgpackpp {
 				{
 					m_buffer.push_back(pack_type::UINT16);
 					// network byteorder
-					auto _n = static_cast<std::uint16_t>(n);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::uint16_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint32_t>::max())
 				{
 					m_buffer.push_back(pack_type::UINT32);
 					// network byteorder
-					auto _n = static_cast<std::uint32_t>(n);
-					m_buffer.push_back((_n >> 24) & 0xff);
-					m_buffer.push_back((_n >> 16) & 0xff);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::uint32_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint64_t>::max()) {
 					m_buffer.push_back(pack_type::UINT64);
 					// network byteorder
-					auto _n = static_cast<std::uint64_t>(n);
-					m_buffer.push_back((_n >> 56) & 0xff);
-					m_buffer.push_back((_n >> 48) & 0xff);
-					m_buffer.push_back((_n >> 40) & 0xff);
-					m_buffer.push_back((_n >> 32) & 0xff);
-					m_buffer.push_back((_n >> 24) & 0xff);
-					m_buffer.push_back((_n >> 16) & 0xff);
-					m_buffer.push_back((_n >> 8) & 0xff);
-					m_buffer.push_back(_n & 0xff);
+					push_number_reverse(static_cast<std::uint64_t>(n));
 				}
 				else {
 					throw std::exception("not implemented");
@@ -405,27 +396,15 @@ namespace msgpackpp {
 
 		packer& pack_float(float n)
 		{
-			auto _n = *reinterpret_cast<std::uint32_t*>(&n);
 			m_buffer.push_back(pack_type::FLOAT);
-			m_buffer.push_back((_n >> 24) & 0xff);
-			m_buffer.push_back((_n >> 16) & 0xff);
-			m_buffer.push_back((_n >> 8) & 0xff);
-			m_buffer.push_back(_n  & 0xff);
+			push_number_reverse(n);
 			return *this;
 		}
 
 		packer& pack_double(double n)
 		{
-			auto _n = *reinterpret_cast<std::uint64_t*>(&n);
 			m_buffer.push_back(pack_type::DOUBLE);
-			m_buffer.push_back((_n >> 56) & 0xff);
-			m_buffer.push_back((_n >> 48) & 0xff);
-			m_buffer.push_back((_n >> 40) & 0xff);
-			m_buffer.push_back((_n >> 32) & 0xff);
-			m_buffer.push_back((_n >> 24) & 0xff);
-			m_buffer.push_back((_n >> 16) & 0xff);
-			m_buffer.push_back((_n >> 8) & 0xff);
-			m_buffer.push_back(_n & 0xff);
+			push_number_reverse(n);
 			return *this;
 		}
 
@@ -440,6 +419,38 @@ namespace msgpackpp {
 			return *this;
 		}
 
+		packer& pack_str(const std::string &str)
+		{
+			auto size = str.size();
+			if (size < 32)
+			{
+				m_buffer.push_back(pack_type::FIX_STR | static_cast<std::uint8_t>(size));
+				push(str.data(), size);
+			}
+			else if (size <= std::numeric_limits<std::uint8_t>::max())
+			{
+				m_buffer.push_back(pack_type::STR8);
+				m_buffer.push_back(static_cast<std::uint8_t>(size));
+				push(str.data(), size);
+			}
+			else if (size <= std::numeric_limits<std::uint16_t>::max())
+			{
+				m_buffer.push_back(pack_type::STR16);
+				push_number_reverse(static_cast<std::uint16_t>(size));
+				push(str.data(), size);
+			}
+			else if (size <= std::numeric_limits<std::uint32_t>::max())
+			{
+				m_buffer.push_back(pack_type::STR32);
+				push_number_reverse(static_cast<std::uint32_t>(size));
+				push(str.data(), size);
+			}
+			else {
+				throw std::exception("not implemented");
+			}
+			return *this;
+		}
+
 		const std::vector<std::uint8_t> &get_payload()const { return m_buffer; }
 	};
 
@@ -448,11 +459,80 @@ namespace msgpackpp {
 		const std::uint8_t *m_p;
 		int m_size;
 
+		template<typename T>
+		T body_number()const
+		{
+			switch (sizeof(T))
+			{
+			case 1: return m_p[1];
+			case 2: return (m_p[1] << 8) | m_p[2];
+			case 4:
+			{
+				std::uint8_t buf[] = {
+					m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<T*>(buf);
+			}
+			case 8:
+			{
+				std::uint8_t buf[] = {
+					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
+				};
+				return *reinterpret_cast<T*>(buf);
+			}
+			}
+		}
+
 	public:
 		parser(const std::uint8_t *p, int size)
 			: m_p(p)
 		{
 			// ToDo
+		}
+
+		std::string get_string()const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			switch (type)
+			{
+			case pack_type::STR32: return std::string(m_p + 1 + 4, m_p + 1 + 4 + body_number<std::uint32_t>());
+			case pack_type::STR16: return std::string(m_p + 1 + 2, m_p + 1 + 2 + body_number<std::uint16_t>());
+			case pack_type::STR8: return std::string(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
+			case pack_type::FIX_STR: return "";
+			case pack_type::FIX_STR_0x01: return std::string(m_p + 1, m_p + 2);
+			case pack_type::FIX_STR_0x02: return std::string(m_p + 1, m_p + 3);
+			case pack_type::FIX_STR_0x03: return std::string(m_p + 1, m_p + 4);
+			case pack_type::FIX_STR_0x04: return std::string(m_p + 1, m_p + 5);
+			case pack_type::FIX_STR_0x05: return std::string(m_p + 1, m_p + 6);
+			case pack_type::FIX_STR_0x06: return std::string(m_p + 1, m_p + 7);
+			case pack_type::FIX_STR_0x07: return std::string(m_p + 1, m_p + 8);
+			case pack_type::FIX_STR_0x08: return std::string(m_p + 1, m_p + 9);
+			case pack_type::FIX_STR_0x09: return std::string(m_p + 1, m_p + 10);
+			case pack_type::FIX_STR_0x0A: return std::string(m_p + 1, m_p + 11);
+			case pack_type::FIX_STR_0x0B: return std::string(m_p + 1, m_p + 12);
+			case pack_type::FIX_STR_0x0C: return std::string(m_p + 1, m_p + 13);
+			case pack_type::FIX_STR_0x0D: return std::string(m_p + 1, m_p + 14);
+			case pack_type::FIX_STR_0x0E: return std::string(m_p + 1, m_p + 15);
+			case pack_type::FIX_STR_0x0F: return std::string(m_p + 1, m_p + 16);
+			case pack_type::FIX_STR_0x10: return std::string(m_p + 1, m_p + 17);
+			case pack_type::FIX_STR_0x11: return std::string(m_p + 1, m_p + 18);
+			case pack_type::FIX_STR_0x12: return std::string(m_p + 1, m_p + 19);
+			case pack_type::FIX_STR_0x13: return std::string(m_p + 1, m_p + 20);
+			case pack_type::FIX_STR_0x14: return std::string(m_p + 1, m_p + 21);
+			case pack_type::FIX_STR_0x15: return std::string(m_p + 1, m_p + 22);
+			case pack_type::FIX_STR_0x16: return std::string(m_p + 1, m_p + 23);
+			case pack_type::FIX_STR_0x17: return std::string(m_p + 1, m_p + 24);
+			case pack_type::FIX_STR_0x18: return std::string(m_p + 1, m_p + 25);
+			case pack_type::FIX_STR_0x19: return std::string(m_p + 1, m_p + 26);
+			case pack_type::FIX_STR_0x1A: return std::string(m_p + 1, m_p + 27);
+			case pack_type::FIX_STR_0x1B: return std::string(m_p + 1, m_p + 28);
+			case pack_type::FIX_STR_0x1C: return std::string(m_p + 1, m_p + 29);
+			case pack_type::FIX_STR_0x1D: return std::string(m_p + 1, m_p + 30);
+			case pack_type::FIX_STR_0x1E: return std::string(m_p + 1, m_p + 31);
+			case pack_type::FIX_STR_0x1F: return std::string(m_p + 1, m_p + 32);
+			}
+
+			throw std::exception("not implemented");
 		}
 
 		template<typename T>
@@ -467,39 +547,15 @@ namespace msgpackpp {
 			switch (type)
 			{
 			case pack_type::UINT8: return m_p[1];
-			case pack_type::UINT16: return (m_p[1] << 8) | m_p[2];
-			case pack_type::UINT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
-			case pack_type::UINT64:
-			{
-				std::uint8_t buf[8] = {
-					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
-				};
-				return *reinterpret_cast<std::uint64_t*>(buf);
-			}
+			case pack_type::UINT16: return body_number<std::uint16_t>();
+			case pack_type::UINT32: return body_number<std::uint32_t>();
+			case pack_type::UINT64: return body_number<std::uint64_t>();
 			case pack_type::INT8: return m_p[1];
-			case pack_type::INT16: return (m_p[1] << 8) | m_p[2];
-			case pack_type::INT32: return (m_p[1] << 24 | m_p[2] << 16 | m_p[3] << 8 | m_p[4]);
-			case pack_type::INT64:
-			{
-				std::uint8_t buf[8] = {
-					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
-				};
-				return *reinterpret_cast<std::int64_t*>(buf);
-			}
-			case pack_type::FLOAT:
-			{
-				std::uint8_t buf[8] = {
-					m_p[4], m_p[3], m_p[2], m_p[1]
-				};
-				return *reinterpret_cast<float*>(buf);
-			}
-			case pack_type::DOUBLE:
-			{
-				std::uint8_t buf[8] = {
-					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
-				};
-				return *reinterpret_cast<double*>(buf);
-			}
+			case pack_type::INT16: return body_number<std::int16_t>();
+			case pack_type::INT32: return body_number<std::int32_t>();
+			case pack_type::INT64: return body_number<std::int64_t>();
+			case pack_type::FLOAT: return body_number<float>();
+			case pack_type::DOUBLE: return body_number<double>();
 			case pack_type::NEGATIVE_FIXNUM: return -32;
 			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;
 			case pack_type::NEGATIVE_FIXNUM_0x1E: return -30;
