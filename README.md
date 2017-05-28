@@ -64,3 +64,25 @@ method
 
 see [tests](tests/tests.cpp).
 
+# serializer
+There is partial implementation for tests.
+
+## sample
+
+```cpp
+	packer& serialize(packer &p, const int &t)
+	{
+		return p.pack_integer(t);
+	}
+```
+
+## usage
+
+```cpp
+    auto packer = msgpackpp::packer();
+    packer.pack_array(3) << 1 << 2 << 3;
+```
+
+# deserializer
+ToDo
+
