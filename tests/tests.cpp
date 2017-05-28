@@ -415,7 +415,7 @@ TEST_CASE("bin8")
 	buf.push_back(0);
 
 	// packing
-	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+	auto p = msgpackpp::packer().pack_bin(buf).get_payload();
 
 	// check
 	REQUIRE(2 + 1 == p.size());
@@ -438,7 +438,7 @@ TEST_CASE("bin16")
 	}
 
 	// packing
-	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+	auto p = msgpackpp::packer().pack_bin(buf).get_payload();
 
 	// check
 	REQUIRE(3 + 0xFF + 1 == p.size());
@@ -461,7 +461,7 @@ TEST_CASE("bin32")
 	}
 
 	// packing
-	auto p = msgpackpp::packer().pack_bin(buf.data(), buf.size()).get_payload();
+	auto p = msgpackpp::packer().pack_bin(buf).get_payload();
 
 	// check
 	REQUIRE(5 + 0xFFFF + 1 == p.size());

@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <vector>
 #include <limits>
+#include <iterator>
+#include <string>
+#include <algorithm>
 
 
 namespace msgpackpp {
@@ -298,11 +301,10 @@ namespace msgpackpp {
 		std::vector<std::uint8_t> m_buffer;
 
 	private:
-		void push(const void *p, int size)
+		template<class Range>
+		void push(const Range &r)
 		{
-			auto lastsize = m_buffer.size();
-			m_buffer.resize(lastsize + size);
-			memcpy(&m_buffer[lastsize], p, size);
+			m_buffer.insert(m_buffer.end(), std::begin(r), std::end(r));
 		}
 
 		template<typename T>
@@ -419,31 +421,37 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack_str(const std::string &str)
+		packer& pack_str(const char *str)
 		{
-			auto size = str.size();
+			return pack_str(std::string(str));
+		}
+
+		template <class Range>
+		packer& pack_str(const Range &r)
+		{
+			auto size = std::distance(std::begin(r), std::end(r));
 			if (size < 32)
 			{
 				m_buffer.push_back(pack_type::FIX_STR | static_cast<std::uint8_t>(size));
-				push(str.data(), size);
+				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint8_t>::max())
 			{
 				m_buffer.push_back(pack_type::STR8);
 				m_buffer.push_back(static_cast<std::uint8_t>(size));
-				push(str.data(), size);
+				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint16_t>::max())
 			{
 				m_buffer.push_back(pack_type::STR16);
 				push_number_reverse(static_cast<std::uint16_t>(size));
-				push(str.data(), size);
+				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint32_t>::max())
 			{
 				m_buffer.push_back(pack_type::STR32);
 				push_number_reverse(static_cast<std::uint32_t>(size));
-				push(str.data(), size);
+				push(r);
 			}
 			else {
 				throw std::exception("not implemented");
@@ -451,25 +459,27 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack_bin(const void *data, int size)
+		template <class Range>
+		packer& pack_bin(const Range &r)
 		{
+			auto size = std::distance(std::begin(r), std::end(r));
 			if (size <= std::numeric_limits<std::uint8_t>::max())
 			{
 				m_buffer.push_back(pack_type::BIN8);
 				m_buffer.push_back(static_cast<std::uint8_t>(size));
-				push(data, size);
+				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint16_t>::max())
 			{
 				m_buffer.push_back(pack_type::BIN16);
 				push_number_reverse(static_cast<std::uint16_t>(size));
-				push(data, size);
+				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint32_t>::max())
 			{
 				m_buffer.push_back(pack_type::BIN32);
 				push_number_reverse(static_cast<std::uint32_t>(size));
-				push(data, size);
+				push(r);
 			}
 			else {
 				throw std::exception("not implemented");
