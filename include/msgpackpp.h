@@ -361,7 +361,7 @@ namespace msgpackpp {
 					push_number_reverse(static_cast<std::int64_t>(n));
 				}
 				else {
-					throw std::exception("pack_integer: not implemented");
+					throw std::runtime_error("pack_integer: not implemented");
 				}
 			}
 			else {
@@ -392,7 +392,7 @@ namespace msgpackpp {
 					push_number_reverse(static_cast<std::uint64_t>(n));
 				}
 				else {
-					throw std::exception("pack_integer: not implemented");
+					throw std::runtime_error("pack_integer: not implemented");
 				}
 			}
 			return *this;
@@ -456,7 +456,7 @@ namespace msgpackpp {
 				push(r);
 			}
 			else {
-				throw std::exception("pack_str: not implemented");
+				throw std::runtime_error("pack_str: not implemented");
 			}
 			return *this;
 		}
@@ -484,7 +484,7 @@ namespace msgpackpp {
 				push(r);
 			}
 			else {
-				throw std::exception("pack_bin: not implemented");
+				throw std::runtime_error("pack_bin: not implemented");
 			}
 			return *this;
 		}
@@ -506,7 +506,7 @@ namespace msgpackpp {
 				push_number_reverse(static_cast<std::uint32_t>(n));
 			}
 			else {
-				throw std::exception("pack_array: not implemented");
+				throw std::runtime_error("pack_array: not implemented");
 			}
 			return *this;
 		}
@@ -528,7 +528,7 @@ namespace msgpackpp {
 				push_number_reverse(static_cast<std::uint32_t>(n));
 			}
 			else {
-				throw std::exception("pack_map: not implemented");
+				throw std::runtime_error("pack_map: not implemented");
 			}
 			return *this;
 		}
@@ -782,7 +782,7 @@ namespace msgpackpp {
 #pragma endregion
 
 			case NIL: return 1;
-			case NEVER_USED: throw std::exception("no size");
+			case NEVER_USED: throw std::runtime_error("no size");
 			case FALSE: return 1;
 			case TRUE: return 1;
 
@@ -790,9 +790,9 @@ namespace msgpackpp {
 			case BIN16: return 1 + 2;
 			case BIN32: return 1 + 4;
 
-			case EXT8: throw std::exception("not implemented");
-			case EXT16: throw std::exception("not implemented");
-			case EXT32: throw std::exception("not implemented");
+			case EXT8: throw std::runtime_error("not implemented");
+			case EXT16: throw std::runtime_error("not implemented");
+			case EXT32: throw std::runtime_error("not implemented");
 
 			case FLOAT: return 1;
 			case DOUBLE: return 1;
@@ -805,11 +805,11 @@ namespace msgpackpp {
 			case INT32: return 1;
 			case INT64: return 1;
 
-			case FIX_EXT_1: throw std::exception("not implemented");
-			case FIX_EXT_2: throw std::exception("not implemented");
-			case FIX_EXT_4: throw std::exception("not implemented");
-			case FIX_EXT_8: throw std::exception("not implemented");
-			case FIX_EXT_16: throw std::exception("not implemented");
+			case FIX_EXT_1: throw std::runtime_error("not implemented");
+			case FIX_EXT_2: throw std::runtime_error("not implemented");
+			case FIX_EXT_4: throw std::runtime_error("not implemented");
+			case FIX_EXT_8: throw std::runtime_error("not implemented");
+			case FIX_EXT_16: throw std::runtime_error("not implemented");
 
 			case STR8: return 1 + 1;
 			case STR16: return 1 + 2;
@@ -857,7 +857,7 @@ namespace msgpackpp {
 
 			}
 
-			throw std::exception("not implemented");
+			throw std::runtime_error("not implemented");
 		}
 
 		int body_size()const
@@ -1004,41 +1004,41 @@ namespace msgpackpp {
 #pragma endregion
 
 #pragma region FIX_MAP 0x80 - 0x8F
-			case FIX_MAP: throw std::exception("no size");
-			case FIX_MAP_0x1: throw std::exception("no size");
-			case FIX_MAP_0x2: throw std::exception("no size");
-			case FIX_MAP_0x3: throw std::exception("no size");
-			case FIX_MAP_0x4: throw std::exception("no size");
-			case FIX_MAP_0x5: throw std::exception("no size");
-			case FIX_MAP_0x6: throw std::exception("no size");
-			case FIX_MAP_0x7: throw std::exception("no size");
-			case FIX_MAP_0x8: throw std::exception("no size");
-			case FIX_MAP_0x9: throw std::exception("no size");
-			case FIX_MAP_0xA: throw std::exception("no size");
-			case FIX_MAP_0xB: throw std::exception("no size");
-			case FIX_MAP_0xC: throw std::exception("no size");
-			case FIX_MAP_0xD: throw std::exception("no size");
-			case FIX_MAP_0xE: throw std::exception("no size");
-			case FIX_MAP_0xF: throw std::exception("no size");
+			case FIX_MAP: throw std::runtime_error("no size");
+			case FIX_MAP_0x1: throw std::runtime_error("no size");
+			case FIX_MAP_0x2: throw std::runtime_error("no size");
+			case FIX_MAP_0x3: throw std::runtime_error("no size");
+			case FIX_MAP_0x4: throw std::runtime_error("no size");
+			case FIX_MAP_0x5: throw std::runtime_error("no size");
+			case FIX_MAP_0x6: throw std::runtime_error("no size");
+			case FIX_MAP_0x7: throw std::runtime_error("no size");
+			case FIX_MAP_0x8: throw std::runtime_error("no size");
+			case FIX_MAP_0x9: throw std::runtime_error("no size");
+			case FIX_MAP_0xA: throw std::runtime_error("no size");
+			case FIX_MAP_0xB: throw std::runtime_error("no size");
+			case FIX_MAP_0xC: throw std::runtime_error("no size");
+			case FIX_MAP_0xD: throw std::runtime_error("no size");
+			case FIX_MAP_0xE: throw std::runtime_error("no size");
+			case FIX_MAP_0xF: throw std::runtime_error("no size");
 #pragma endregion
 
 #pragma region FIX_ARRAY 0x90 - 0x9F
-			case FIX_ARRAY: throw std::exception("no size");
-			case FIX_ARRAY_0x1: throw std::exception("no size");
-			case FIX_ARRAY_0x2: throw std::exception("no size");
-			case FIX_ARRAY_0x3: throw std::exception("no size");
-			case FIX_ARRAY_0x4: throw std::exception("no size");
-			case FIX_ARRAY_0x5: throw std::exception("no size");
-			case FIX_ARRAY_0x6: throw std::exception("no size");
-			case FIX_ARRAY_0x7: throw std::exception("no size");
-			case FIX_ARRAY_0x8: throw std::exception("no size");
-			case FIX_ARRAY_0x9: throw std::exception("no size");
-			case FIX_ARRAY_0xA: throw std::exception("no size");
-			case FIX_ARRAY_0xB: throw std::exception("no size");
-			case FIX_ARRAY_0xC: throw std::exception("no size");
-			case FIX_ARRAY_0xD: throw std::exception("no size");
-			case FIX_ARRAY_0xE: throw std::exception("no size");
-			case FIX_ARRAY_0xF: throw std::exception("no size");
+			case FIX_ARRAY: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x1: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x2: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x3: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x4: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x5: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x6: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x7: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x8: throw std::runtime_error("no size");
+			case FIX_ARRAY_0x9: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xA: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xB: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xC: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xD: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xE: throw std::runtime_error("no size");
+			case FIX_ARRAY_0xF: throw std::runtime_error("no size");
 #pragma endregion
 
 #pragma region FIX_STR 0xA0 - 0xBF
@@ -1077,7 +1077,7 @@ namespace msgpackpp {
 #pragma endregion
 
 			case NIL: return 0;
-			case NEVER_USED: throw std::exception("no size");
+			case NEVER_USED: throw std::runtime_error("no size");
 			case FALSE: return 0;
 			case TRUE: return 0;
 
@@ -1085,9 +1085,9 @@ namespace msgpackpp {
 			case BIN16: return body_number<std::uint16_t>();
 			case BIN32: return body_number<std::uint32_t>();
 
-			case EXT8: throw std::exception("not implemented");
-			case EXT16: throw std::exception("not implemented");
-			case EXT32: throw std::exception("not implemented");
+			case EXT8: throw std::runtime_error("not implemented");
+			case EXT16: throw std::runtime_error("not implemented");
+			case EXT32: throw std::runtime_error("not implemented");
 
 			case FLOAT: return 4;
 			case DOUBLE: return 8;
@@ -1100,20 +1100,20 @@ namespace msgpackpp {
 			case INT32: return 4;
 			case INT64: return 8;
 
-			case FIX_EXT_1: throw std::exception("not implemented");
-			case FIX_EXT_2: throw std::exception("not implemented");
-			case FIX_EXT_4: throw std::exception("not implemented");
-			case FIX_EXT_8: throw std::exception("not implemented");
-			case FIX_EXT_16: throw std::exception("not implemented");
+			case FIX_EXT_1: throw std::runtime_error("not implemented");
+			case FIX_EXT_2: throw std::runtime_error("not implemented");
+			case FIX_EXT_4: throw std::runtime_error("not implemented");
+			case FIX_EXT_8: throw std::runtime_error("not implemented");
+			case FIX_EXT_16: throw std::runtime_error("not implemented");
 
 			case STR8: return body_number<std::uint8_t>();
 			case STR16: return body_number<std::uint16_t>();
 			case STR32: return body_number<std::uint32_t>();
 
-			case ARRAY16: throw std::exception("no size");
-			case ARRAY32: throw std::exception("no size");
-			case MAP16: throw std::exception("no size");
-			case MAP32: throw std::exception("no size");
+			case ARRAY16: throw std::runtime_error("no size");
+			case ARRAY32: throw std::runtime_error("no size");
+			case MAP16: throw std::runtime_error("no size");
+			case MAP32: throw std::runtime_error("no size");
 
 #pragma region NEGATIVE_FIXNUM 0xE0 - 0xFF
 			case NEGATIVE_FIXNUM: return 0;
@@ -1151,7 +1151,7 @@ namespace msgpackpp {
 #pragma endregion
 			}
 
-			throw std::exception("not implemented");
+			throw std::runtime_error("not implemented");
 		}
 
 	public:
@@ -1250,7 +1250,7 @@ namespace msgpackpp {
 					os << "[bin:" << body_size() << "bytes]";
 				}
 				else {
-					throw std::exception("arienai");
+					throw std::runtime_error("arienai");
 				}
 			}
 		}
@@ -1265,7 +1265,7 @@ namespace msgpackpp {
 			case pack_type::FALSE: return false;
 			}
 
-			throw std::exception("not bool");
+			throw std::runtime_error("not bool");
 		}
 
 		std::string get_string()const
@@ -1310,7 +1310,7 @@ namespace msgpackpp {
 			case pack_type::FIX_STR_0x1F: return std::string(m_p + 1, m_p + 32);
 			}
 
-			throw std::exception("not string");
+			throw std::runtime_error("not string");
 		}
 
 		std::vector<std::uint8_t> get_binary()const
@@ -1323,7 +1323,7 @@ namespace msgpackpp {
 			case pack_type::BIN8: return std::vector<std::uint8_t>(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
 			}
 
-			throw std::exception("not binary");
+			throw std::runtime_error("not binary");
 		}
 
 		template<typename T>
@@ -1381,7 +1381,7 @@ namespace msgpackpp {
 			case pack_type::NEGATIVE_FIXNUM_0x01: return -1;
 			}
 
-			throw std::exception("not number");
+			throw std::runtime_error("not number");
 		}
 
 		bool is_nil()const
@@ -1753,7 +1753,7 @@ namespace msgpackpp {
 			case pack_type::MAP32: return body_number<std::uint32_t>();
 			}
 
-			throw std::exception("not array or map");
+			throw std::runtime_error("not array or map");
 		}
 
 		parser operator[](int index)const
@@ -1787,7 +1787,7 @@ namespace msgpackpp {
 				current = current.next();
 			}
 
-			throw std::exception("not found");
+			throw std::runtime_error("not found");
 		}
 
 		parser next()const

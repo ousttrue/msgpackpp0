@@ -9,6 +9,8 @@ include_directories(
     tests
     )
 
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unknown-pragmas")
+
 add_executable(sample 
     include/msgpackpp.h
     samples/sample.cpp
