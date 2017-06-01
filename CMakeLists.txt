@@ -9,7 +9,7 @@ include_directories(
     tests
     )
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unknown-pragmas")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unknown-pragmas -Wno-switch")
 
 add_executable(sample 
     include/msgpackpp.h

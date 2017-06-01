@@ -314,7 +314,7 @@ namespace msgpackpp {
 		{
 			auto size = sizeof(T);
 			auto _p = reinterpret_cast<std::uint8_t*>(&n) + (size - 1);
-			for (int i = 0; i < size; ++i, --_p)
+			for (size_t i = 0; i < size; ++i, --_p)
 			{
 				m_buffer.push_back(*_p);
 			}
@@ -489,7 +489,7 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack_array(int n)
+		packer& pack_array(size_t n)
 		{
 			if (n <= 15)
 			{
@@ -511,7 +511,7 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		packer& pack_map(int n)
+		packer& pack_map(size_t n)
 		{
 			if (n <= 15)
 			{
@@ -1258,14 +1258,10 @@ namespace msgpackpp {
 #pragma region leaf
 		bool get_bool()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
-			switch (type)
-			{
-			case pack_type::TRUE: return true;
-			case pack_type::FALSE: return false;
-			}
-
-			throw std::runtime_error("not bool");
+            auto type = static_cast<pack_type>(m_p[0]);
+            if(type== pack_type::TRUE) return true;
+            else if(type==pack_type::FALSE) return false;
+            else throw std::runtime_error("not bool");
 		}
 
 		std::string get_string()const
