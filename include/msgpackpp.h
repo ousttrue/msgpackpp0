@@ -1256,12 +1256,20 @@ namespace msgpackpp {
 		}
 
 #pragma region leaf
+		parser get_bool(bool &value)const
+		{
+			auto type = static_cast<pack_type>(m_p[0]);
+			if (type == pack_type::TRUE) value=true;
+			else if (type == pack_type::FALSE) value=false;
+			else throw std::runtime_error("not bool");
+			return advance(1);
+		}
+
 		bool get_bool()const
 		{
-            auto type = static_cast<pack_type>(m_p[0]);
-            if(type== pack_type::TRUE) return true;
-            else if(type==pack_type::FALSE) return false;
-            else throw std::runtime_error("not bool");
+			bool value;
+			get_bool(value);
+			return value;
 		}
 
 		std::string get_string()const
@@ -1838,32 +1846,32 @@ namespace msgpackpp {
 
 #pragma region serializer
 	template<typename T>
-	packer& operator<<(packer &p, const T &t)
+	inline packer& operator<<(packer &p, const T &t)
 	{
 		return serialize(p, t);
 	}
 
-	packer& serialize(packer &p, const int &t)
+	inline packer& serialize(packer &p, const int &t)
 	{
 		return p.pack_integer(t);
 	}
-	packer& serialize(packer &p, const char* t)
+	inline packer& serialize(packer &p, const char* t)
 	{
 		return p.pack_str(t);
 	}
-	packer& serialize(packer &p, const std::string &t)
+	inline packer& serialize(packer &p, const std::string &t)
 	{
 		return p.pack_str(t);
 	}
-	packer& serialize(packer &p, const bool &t)
+	inline packer& serialize(packer &p, const bool &t)
 	{
 		return p.pack_bool(t);
 	}
-	packer& serialize(packer &p, const float &t)
+	inline packer& serialize(packer &p, const float &t)
 	{
 		return p.pack_float(t);
 	}
-	packer& serialize(packer &p, const double &t)
+	inline packer& serialize(packer &p, const double &t)
 	{
 		return p.pack_double(t);
 	}
@@ -1871,12 +1879,17 @@ namespace msgpackpp {
 
 #pragma region deserializer
 	template<typename T>
-	parser operator>>(const parser &u, T &t)
+	inline parser operator>>(const parser &u, T &t)
 	{
 		return deserialize(u, t);
 	}
 
-	parser deserialize(const parser &u, int &value)
+	inline parser deserialize(const parser &u, bool &value)
+	{
+		return u.get_bool(value);
+	}
+
+	inline parser deserialize(const parser &u, int &value)
 	{
 		return u.get_number(value);
 	}
@@ -1885,7 +1898,7 @@ namespace msgpackpp {
 
 #pragma region stream out
 	// json like
-	std::ostream& operator<<(std::ostream &os, const parser &p)
+	inline std::ostream& operator<<(std::ostream &os, const parser &p)
 	{
 		p.to_json(os);
 		return os;

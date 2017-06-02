@@ -11,14 +11,6 @@ endif()
 add_executable(tests 
     include/msgpackpp.h
     tests/msgpack.cpp
-    ) # .vcxproj
-include_directories(
-    include
-    tests
-    )
-
-add_executable(serialize 
-    include/msgpackpp.h
     tests/serialize.cpp
     ) # .vcxproj
 include_directories(

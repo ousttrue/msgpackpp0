@@ -1,19 +1,32 @@
 #include <msgpackpp.h>
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+//#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch.hpp>
 
 
-TEST_CASE("serialize int")
+template<typename T>
+void Test(T src)
 {
-    // serialize
+	// serialize
 	auto packer = msgpackpp::packer();
-    packer << 1;
+	packer << src;
 	auto p = packer.get_payload();
 
 	// deserialize
 	auto parsed = msgpackpp::parser(p.data(), p.size());
-    int value;
-    parsed >> value;
+	T value;
+	parsed >> value;
 
-	REQUIRE(1 == value);
+	REQUIRE(src == value);
+}
+
+
+TEST_CASE("serialize true")
+{
+	Test(true);
+	Test(false);
+}
+
+TEST_CASE("serialize int")
+{
+	Test(1);
 }
