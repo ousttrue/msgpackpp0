@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     // std::vector<std::uint8_t>
     auto p = packer.get_payload();
 
-    // unpack
+    // parse
     auto u = msgpackpp::parser(p);
     std::cout << u << std::endl; // json style for debug
 

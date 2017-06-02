@@ -1322,62 +1322,76 @@ namespace msgpackpp {
 			throw std::runtime_error("not binary");
 		}
 
+		parser advance(size_t n)const
+		{
+			return parser(m_p + n, m_size - n);
+		}
+
 		template<typename T>
-		T get_number()const
+		parser get_number(T &value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			if (type <= 0x7f) {
-				// small int
-				return type;
+				// small int(0 - 127)
+				value=type;
+				return advance(1);
 			}
 
 			switch (type)
 			{
-			case pack_type::UINT8: return m_p[1];
-			case pack_type::UINT16: return body_number<std::uint16_t>();
-			case pack_type::UINT32: return body_number<std::uint32_t>();
-			case pack_type::UINT64: return body_number<std::uint64_t>();
-			case pack_type::INT8: return m_p[1];
-			case pack_type::INT16: return body_number<std::int16_t>();
-			case pack_type::INT32: return body_number<std::int32_t>();
-			case pack_type::INT64: return body_number<std::int64_t>();
-			case pack_type::FLOAT: return body_number<float>();
-			case pack_type::DOUBLE: return body_number<double>();
-			case pack_type::NEGATIVE_FIXNUM: return -32;
-			case pack_type::NEGATIVE_FIXNUM_0x1F: return -31;
-			case pack_type::NEGATIVE_FIXNUM_0x1E: return -30;
-			case pack_type::NEGATIVE_FIXNUM_0x1D: return -29;
-			case pack_type::NEGATIVE_FIXNUM_0x1C: return -28;
-			case pack_type::NEGATIVE_FIXNUM_0x1B: return -27;
-			case pack_type::NEGATIVE_FIXNUM_0x1A: return -26;
-			case pack_type::NEGATIVE_FIXNUM_0x19: return -25;
-			case pack_type::NEGATIVE_FIXNUM_0x18: return -24;
-			case pack_type::NEGATIVE_FIXNUM_0x17: return -23;
-			case pack_type::NEGATIVE_FIXNUM_0x16: return -22;
-			case pack_type::NEGATIVE_FIXNUM_0x15: return -21;
-			case pack_type::NEGATIVE_FIXNUM_0x14: return -20;
-			case pack_type::NEGATIVE_FIXNUM_0x13: return -19;
-			case pack_type::NEGATIVE_FIXNUM_0x12: return -18;
-			case pack_type::NEGATIVE_FIXNUM_0x11: return -17;
-			case pack_type::NEGATIVE_FIXNUM_0x10: return -16;
-			case pack_type::NEGATIVE_FIXNUM_0x0F: return -15;
-			case pack_type::NEGATIVE_FIXNUM_0x0E: return -14;
-			case pack_type::NEGATIVE_FIXNUM_0x0D: return -13;
-			case pack_type::NEGATIVE_FIXNUM_0x0C: return -12;
-			case pack_type::NEGATIVE_FIXNUM_0x0B: return -11;
-			case pack_type::NEGATIVE_FIXNUM_0x0A: return -10;
-			case pack_type::NEGATIVE_FIXNUM_0x09: return -9;
-			case pack_type::NEGATIVE_FIXNUM_0x08: return -8;
-			case pack_type::NEGATIVE_FIXNUM_0x07: return -7;
-			case pack_type::NEGATIVE_FIXNUM_0x06: return -6;
-			case pack_type::NEGATIVE_FIXNUM_0x05: return -5;
-			case pack_type::NEGATIVE_FIXNUM_0x04: return -4;
-			case pack_type::NEGATIVE_FIXNUM_0x03: return -3;
-			case pack_type::NEGATIVE_FIXNUM_0x02: return -2;
-			case pack_type::NEGATIVE_FIXNUM_0x01: return -1;
+			case pack_type::UINT8: value = m_p[1]; return advance(1+1);
+			case pack_type::UINT16: value=body_number<std::uint16_t>(); return advance(1+2);
+			case pack_type::UINT32: value=body_number<std::uint32_t>(); return advance(1+4);
+			case pack_type::UINT64: value=body_number<std::uint64_t>(); return advance(1+8);
+			case pack_type::INT8: value=m_p[1]; return advance(1+1);
+			case pack_type::INT16: value=body_number<std::int16_t>(); return advance(1+2);
+			case pack_type::INT32: value=body_number<std::int32_t>(); return advance(1+4);
+			case pack_type::INT64: value=body_number<std::int64_t>(); return advance(1+8);
+			case pack_type::FLOAT: value=body_number<float>(); return advance(1+4);
+			case pack_type::DOUBLE: value=body_number<double>(); return advance(1+8);
+			case pack_type::NEGATIVE_FIXNUM: value=-32; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1F: value=-31; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1E: value=-30; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1D: value=-29; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1C: value=-28; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1B: value=-27; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x1A: value=-26; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x19: value=-25; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x18: value=-24; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x17: value=-23; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x16: value=-22; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x15: value=-21; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x14: value=-20; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x13: value=-19; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x12: value=-18; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x11: value=-17; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x10: value=-16; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0F: value=-15; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0E: value=-14; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0D: value=-13; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0C: value=-12; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0B: value=-11; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x0A: value=-10; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x09: value=-9; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x08: value=-8; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x07: value=-7; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x06: value=-6; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x05: value=-5; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x04: value=-4; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x03: value=-3; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x02: value=-2; return advance(1);
+			case pack_type::NEGATIVE_FIXNUM_0x01: value=-1; return advance(1);
 			}
 
 			throw std::runtime_error("not number");
+		}
+
+		template<typename T>
+		T get_number()const
+		{
+			T value;
+			get_number(value);
+			return value;
 		}
 
 		bool is_nil()const
@@ -1856,12 +1870,25 @@ namespace msgpackpp {
 #pragma endregion
 
 #pragma region deserializer
+	template<typename T>
+	parser operator>>(const parser &u, T &t)
+	{
+		return deserialize(u, t);
+	}
+
+	parser deserialize(const parser &u, int &value)
+	{
+		return u.get_number(value);
+	}
+
 #pragma endregion
 
+#pragma region stream out
 	// json like
 	std::ostream& operator<<(std::ostream &os, const parser &p)
 	{
 		p.to_json(os);
 		return os;
 	}
+#pragma endregion
 }
