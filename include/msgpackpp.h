@@ -431,7 +431,7 @@ namespace msgpackpp {
 		template <class Range>
 		packer& pack_str(const Range &r)
 		{
-			auto size = std::distance(std::begin(r), std::end(r));
+			auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
 			if (size < 32)
 			{
 				m_buffer.push_back(pack_type::FIX_STR | static_cast<std::uint8_t>(size));
@@ -464,7 +464,7 @@ namespace msgpackpp {
 		template <class Range>
 		packer& pack_bin(const Range &r)
 		{
-			auto size = std::distance(std::begin(r), std::end(r));
+			auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
 			if (size <= std::numeric_limits<std::uint8_t>::max())
 			{
 				m_buffer.push_back(pack_type::BIN8);
@@ -563,6 +563,9 @@ namespace msgpackpp {
 				return *reinterpret_cast<T*>(buf);
 			}
 			}
+
+			throw std::runtime_error("body_number: not implemented");
+			return T();
 		}
 
 		int body_index()const
@@ -1317,17 +1320,43 @@ namespace msgpackpp {
 			throw std::runtime_error("not string");
 		}
 
-		std::vector<std::uint8_t> get_binary()const
+		parser get_binary(std::vector<std::uint8_t> &value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			switch (type)
 			{
-			case pack_type::BIN32: return std::vector<std::uint8_t>(m_p + 1 + 4, m_p + 1 + 4 + body_number<std::uint32_t>());
-			case pack_type::BIN16: return std::vector<std::uint8_t>(m_p + 1 + 2, m_p + 1 + 2 + body_number<std::uint16_t>());
-			case pack_type::BIN8: return std::vector<std::uint8_t>(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
+			case pack_type::BIN32:
+			{
+				auto begin = m_p + 1 + 4;
+				auto n = body_number<std::uint32_t>();
+				value = std::vector<std::uint8_t>(begin, begin + n);
+				return advance(1 + 4 + n);
+			}
+
+			case pack_type::BIN16:
+			{
+				auto begin = m_p + 1 + 2;
+				auto n = body_number<std::uint16_t>();
+				value = std::vector<std::uint8_t>(begin, begin + n);
+				return advance(1 + 2 + n);
+			}
+			case pack_type::BIN8:
+			{
+				auto begin = m_p + 1 + 1;
+				auto n = body_number<std::uint8_t>();
+				value = std::vector<std::uint8_t>(begin, begin + n);
+				return advance(1 + 1 + n);
+			}
 			}
 
 			throw std::runtime_error("not binary");
+		}
+
+		std::vector<std::uint8_t> get_binary()const
+		{
+			std::vector<std::uint8_t> bytes;
+			get_binary(bytes);
+			return bytes;
 		}
 
 		parser advance(size_t n)const
@@ -1851,10 +1880,6 @@ namespace msgpackpp {
 		return serialize(p, t);
 	}
 
-	inline packer& serialize(packer &p, const int &t)
-	{
-		return p.pack_integer(t);
-	}
 	inline packer& serialize(packer &p, const char* t)
 	{
 		return p.pack_str(t);
@@ -1867,6 +1892,13 @@ namespace msgpackpp {
 	{
 		return p.pack_bool(t);
 	}
+
+	template<typename T>
+	inline packer& serialize(packer &p, const T &t)
+	{
+		return p.pack_integer(t);
+	}
+
 	inline packer& serialize(packer &p, const float &t)
 	{
 		return p.pack_float(t);
@@ -1875,6 +1907,12 @@ namespace msgpackpp {
 	{
 		return p.pack_double(t);
 	}
+
+	inline packer& serialize(packer &p, const std::vector<std::uint8_t> &t)
+	{
+		return p.pack_bin(t);
+	}
+
 #pragma endregion
 
 #pragma region deserializer
@@ -1889,9 +1927,15 @@ namespace msgpackpp {
 		return u.get_bool(value);
 	}
 
-	inline parser deserialize(const parser &u, int &value)
+	template<typename T>
+	inline parser deserialize(const parser &u, T &value)
 	{
 		return u.get_number(value);
+	}
+
+	inline parser deserialize(const parser &u, std::vector<std::uint8_t> &value)
+	{
+		return u.get_binary(value);
 	}
 
 #pragma endregion

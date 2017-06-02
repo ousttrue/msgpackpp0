@@ -20,13 +20,23 @@ void Test(T src)
 }
 
 
-TEST_CASE("serialize true")
+TEST_CASE("serialize")
 {
 	Test(true);
 	Test(false);
-}
-
-TEST_CASE("serialize int")
-{
+	Test(0);
 	Test(1);
+	Test(std::numeric_limits<std::uint8_t>::max());
+	Test(std::numeric_limits<std::uint8_t>::max()+1);
+	Test(std::numeric_limits<std::uint16_t>::max()+1);
+	Test(std::numeric_limits<std::uint32_t>::max()+1);
+	Test(-32);
+	Test(std::numeric_limits<std::int8_t>::min());
+	Test(std::numeric_limits<std::int8_t>::min() - 1);
+	Test(std::numeric_limits<std::int16_t>::min() - 1);
+	Test(std::numeric_limits<std::int32_t>::min() - 1);
+	Test(1.1f);
+	Test(1.1);
+
+	Test(std::vector<std::uint8_t>{1, 2, 3});
 }
