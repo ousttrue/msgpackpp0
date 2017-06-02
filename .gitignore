@@ -1,3 +1,5 @@
 /build
 /build_*
+Win32
+*.log
 
