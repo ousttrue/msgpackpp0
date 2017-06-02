@@ -479,7 +479,7 @@ TEST_CASE("bin32")
 TEST_CASE("fixarray")
 {
 	// packing
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer.pack_array(3)
 		<< 1 << "str" << true
 		;
@@ -505,7 +505,7 @@ TEST_CASE("fixarray")
 TEST_CASE("array16")
 {
 	// packing
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer.pack_array(16)
 		<< 1 << "str1" << true << 1.5f
 		<< 2 << "str2" << false << 1.6f
@@ -536,7 +536,7 @@ TEST_CASE("array16")
 /// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
 TEST_CASE("array32")
 {
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	// packing
 	packer.pack_array(0xFFFF + 1);
 	for (auto i = 0; i < 0xFFFF + 1; ++i) {
@@ -566,7 +566,7 @@ TEST_CASE("array32")
 TEST_CASE("fixmap")
 {
 	// packing
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer.pack_map(3)
 		<< "key1" << 0
 		<< "key2" << 1
@@ -603,7 +603,7 @@ TEST_CASE("fixmap")
 TEST_CASE("map16")
 {
 	// packing
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer.pack_map(17)
 		<< "key1" << 0 << "key2" << 1 << "key3" << 2 << "key4" << 3
 		<< "key5" << 4 << "key6" << 5 << "key7" << 6 << "key8" << 7
@@ -638,7 +638,7 @@ TEST_CASE("map16")
 TEST_CASE("map32")
 {
 	// packing
-	auto packer=msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer.pack_map(0xFFFF + 1);
 	for (int i = 0; i < 0xFFFF+1; ++i) {
 		std::stringstream ss;

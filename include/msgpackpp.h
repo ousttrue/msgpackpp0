@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iosfwd>
 #include <sstream>
+#include <assert.h>
 
 
 namespace msgpackpp {
@@ -321,6 +322,10 @@ namespace msgpackpp {
 		}
 
 	public:
+		packer() = default;
+		packer(const packer&) = delete;
+		packer& operator=(const packer&) = delete;
+
 		packer& pack_nil()
 		{
 			m_buffer.push_back(pack_type::NIL);
@@ -1889,6 +1894,44 @@ namespace msgpackpp {
 #pragma endregion
 	};
 
+#pragma region tuple helper
+	template<typename T, typename ...TS>
+	std::tuple<T, TS...> cons(const T &car, const std::tuple<TS...> &cdr)
+	{
+		return std::tuple_cat(std::make_tuple(car), cdr);
+	}
+
+	//
+	template<typename T, typename Seq>
+	struct tuple_cdr_impl;
+
+	template<typename T, std::size_t I0, std::size_t... I>
+	struct tuple_cdr_impl<T, std::index_sequence<I0, I...>>
+	{
+		using type = std::tuple<typename std::tuple_element<I, T>::type...>;
+	};
+
+	template<typename T>
+	struct tuple_cdr
+		: tuple_cdr_impl<T, std::make_index_sequence<std::tuple_size<T>::value>>
+	{ };
+
+	template<typename T, std::size_t I0, std::size_t... I>
+	typename tuple_cdr<typename std::remove_reference<T>::type>::type
+		cdr_impl(T&& t, std::index_sequence<I0, I...>)
+	{
+		return std::make_tuple(std::get<I>(t)...);
+	}
+
+	template<typename T>
+	typename tuple_cdr<typename std::remove_reference<T>::type>::type
+		cdr(T&& t)
+	{
+		return cdr_impl(std::forward<T>(t),
+			std::make_index_sequence<std::tuple_size<std::remove_reference<T>::type>::value>{});
+	}
+#pragma endregion
+
 #pragma region serializer
 	template<typename T>
 	inline packer& operator<<(packer &p, const T &t)
@@ -1929,6 +1972,27 @@ namespace msgpackpp {
 		return p.pack_bin(t);
 	}
 
+#pragma region serialize tuple
+	template<typename T>
+	inline packer& _serialize(const std::tuple<T> &t, packer &p)
+	{
+		return serialize(p, std::get<0>(t));
+	}
+	template<typename T, typename... TS>
+	inline packer& _serialize(const std::tuple<T, TS...> &t, packer &p)
+	{
+		serialize(p, std::get<0>(t));
+		return _serialize(cdr(t), p);
+	}
+
+	template<typename... TS>
+	inline packer& serialize(packer &p, const std::tuple<TS...> &t)
+	{
+		auto size = std::tuple_size<std::remove_reference<decltype(t)>::type>::value;
+		p.pack_array(size);
+		return _serialize(t, p);
+	}
+#pragma endregion
 #pragma endregion
 
 #pragma region deserializer
@@ -1959,6 +2023,42 @@ namespace msgpackpp {
 		return u.get_string(value);
 	}
 
+#pragma region deserialize tuple
+	template<typename T>
+	inline parser _deserialize(std::tuple<T> &value, const parser &u)
+	{
+		// unpack
+		T t;
+		auto uu = deserialize(u, t);
+
+		value = std::make_tuple(t);
+
+		return uu;
+	}
+
+	template<typename T, typename... TS>
+	inline parser _deserialize(std::tuple<T, TS...> &value, const parser &u)
+	{
+		// unpack
+		T t;
+		auto uu = deserialize(u, t);
+
+		decltype(cdr(value)) remain;
+		auto uuu = _deserialize(remain, uu);
+
+		value = std::tuple_cat(std::make_tuple(t), remain);
+
+		return uuu;
+	}
+
+	template<typename... TS>
+	inline parser deserialize(const parser &u, std::tuple<TS...> &value)
+	{
+		assert(u.is_array(), "is not array");
+		assert(u.count() == std::tuple_size<std::remove_reference<decltype(value)>::type>::value, "different array size");
+		return _deserialize(value, u[0]);
+	}
+#pragma endregion
 #pragma endregion
 
 #pragma region stream out

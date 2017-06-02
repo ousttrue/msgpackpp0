@@ -1,13 +1,14 @@
 #include <msgpackpp.h>
 //#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch.hpp>
+#include <tuple>
 
 
 template<typename T>
 void Test(T src)
 {
 	// serialize
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
 	packer << src;
 	auto p = packer.get_payload();
 
@@ -41,4 +42,6 @@ TEST_CASE("serialize")
 	Test(std::vector<std::uint8_t>{1, 2, 3});
 
 	Test(std::string(u8"“ú–{Œê"));
+
+	Test(std::make_tuple(true, 0, 1.5, std::string(u8"ABC")));
 }
