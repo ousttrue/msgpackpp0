@@ -1275,49 +1275,65 @@ namespace msgpackpp {
 			return value;
 		}
 
-		std::string get_string()const
+	private:
+		parser get_string(std::string& value, size_t offset, size_t size)const
+		{
+			auto head = m_p + offset;
+			value = std::string(head, head + size);
+			return advance(offset + size);
+		}
+
+	public:
+		parser get_string(std::string& value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			switch (type)
 			{
-			case pack_type::STR32: return std::string(m_p + 1 + 4, m_p + 1 + 4 + body_number<std::uint32_t>());
-			case pack_type::STR16: return std::string(m_p + 1 + 2, m_p + 1 + 2 + body_number<std::uint16_t>());
-			case pack_type::STR8: return std::string(m_p + 1 + 1, m_p + 1 + 1 + body_number<std::uint8_t>());
-			case pack_type::FIX_STR: return "";
-			case pack_type::FIX_STR_0x01: return std::string(m_p + 1, m_p + 2);
-			case pack_type::FIX_STR_0x02: return std::string(m_p + 1, m_p + 3);
-			case pack_type::FIX_STR_0x03: return std::string(m_p + 1, m_p + 4);
-			case pack_type::FIX_STR_0x04: return std::string(m_p + 1, m_p + 5);
-			case pack_type::FIX_STR_0x05: return std::string(m_p + 1, m_p + 6);
-			case pack_type::FIX_STR_0x06: return std::string(m_p + 1, m_p + 7);
-			case pack_type::FIX_STR_0x07: return std::string(m_p + 1, m_p + 8);
-			case pack_type::FIX_STR_0x08: return std::string(m_p + 1, m_p + 9);
-			case pack_type::FIX_STR_0x09: return std::string(m_p + 1, m_p + 10);
-			case pack_type::FIX_STR_0x0A: return std::string(m_p + 1, m_p + 11);
-			case pack_type::FIX_STR_0x0B: return std::string(m_p + 1, m_p + 12);
-			case pack_type::FIX_STR_0x0C: return std::string(m_p + 1, m_p + 13);
-			case pack_type::FIX_STR_0x0D: return std::string(m_p + 1, m_p + 14);
-			case pack_type::FIX_STR_0x0E: return std::string(m_p + 1, m_p + 15);
-			case pack_type::FIX_STR_0x0F: return std::string(m_p + 1, m_p + 16);
-			case pack_type::FIX_STR_0x10: return std::string(m_p + 1, m_p + 17);
-			case pack_type::FIX_STR_0x11: return std::string(m_p + 1, m_p + 18);
-			case pack_type::FIX_STR_0x12: return std::string(m_p + 1, m_p + 19);
-			case pack_type::FIX_STR_0x13: return std::string(m_p + 1, m_p + 20);
-			case pack_type::FIX_STR_0x14: return std::string(m_p + 1, m_p + 21);
-			case pack_type::FIX_STR_0x15: return std::string(m_p + 1, m_p + 22);
-			case pack_type::FIX_STR_0x16: return std::string(m_p + 1, m_p + 23);
-			case pack_type::FIX_STR_0x17: return std::string(m_p + 1, m_p + 24);
-			case pack_type::FIX_STR_0x18: return std::string(m_p + 1, m_p + 25);
-			case pack_type::FIX_STR_0x19: return std::string(m_p + 1, m_p + 26);
-			case pack_type::FIX_STR_0x1A: return std::string(m_p + 1, m_p + 27);
-			case pack_type::FIX_STR_0x1B: return std::string(m_p + 1, m_p + 28);
-			case pack_type::FIX_STR_0x1C: return std::string(m_p + 1, m_p + 29);
-			case pack_type::FIX_STR_0x1D: return std::string(m_p + 1, m_p + 30);
-			case pack_type::FIX_STR_0x1E: return std::string(m_p + 1, m_p + 31);
-			case pack_type::FIX_STR_0x1F: return std::string(m_p + 1, m_p + 32);
+			case pack_type::STR32: return get_string(value, 1+4, body_number<std::uint32_t>());
+			case pack_type::STR16: return get_string(value, 1 + 2, body_number<std::uint16_t>());
+			case pack_type::STR8: return get_string(value, 1 + 1, body_number<std::uint8_t>());
+			case pack_type::FIX_STR: return get_string(value, 1, 0);
+			case pack_type::FIX_STR_0x01: return get_string(value, 1, 1);
+			case pack_type::FIX_STR_0x02: return get_string(value, 1, 2);
+			case pack_type::FIX_STR_0x03: return get_string(value, 1, 3);
+			case pack_type::FIX_STR_0x04: return get_string(value, 1, 4);
+			case pack_type::FIX_STR_0x05: return get_string(value, 1, 5);
+			case pack_type::FIX_STR_0x06: return get_string(value, 1, 6);
+			case pack_type::FIX_STR_0x07: return get_string(value, 1, 7);
+			case pack_type::FIX_STR_0x08: return get_string(value, 1, 8);
+			case pack_type::FIX_STR_0x09: return get_string(value, 1, 9);
+			case pack_type::FIX_STR_0x0A: return get_string(value, 1, 10);
+			case pack_type::FIX_STR_0x0B: return get_string(value, 1, 11);
+			case pack_type::FIX_STR_0x0C: return get_string(value, 1, 12);
+			case pack_type::FIX_STR_0x0D: return get_string(value, 1, 13);
+			case pack_type::FIX_STR_0x0E: return get_string(value, 1, 14);
+			case pack_type::FIX_STR_0x0F: return get_string(value, 1, 15);
+			case pack_type::FIX_STR_0x10: return get_string(value, 1, 16);
+			case pack_type::FIX_STR_0x11: return get_string(value, 1, 17);
+			case pack_type::FIX_STR_0x12: return get_string(value, 1, 18);
+			case pack_type::FIX_STR_0x13: return get_string(value, 1, 19);
+			case pack_type::FIX_STR_0x14: return get_string(value, 1, 20);
+			case pack_type::FIX_STR_0x15: return get_string(value, 1, 21);
+			case pack_type::FIX_STR_0x16: return get_string(value, 1, 22);
+			case pack_type::FIX_STR_0x17: return get_string(value, 1, 23);
+			case pack_type::FIX_STR_0x18: return get_string(value, 1, 24);
+			case pack_type::FIX_STR_0x19: return get_string(value, 1, 25);
+			case pack_type::FIX_STR_0x1A: return get_string(value, 1, 26);
+			case pack_type::FIX_STR_0x1B: return get_string(value, 1, 27);
+			case pack_type::FIX_STR_0x1C: return get_string(value, 1, 28);
+			case pack_type::FIX_STR_0x1D: return get_string(value, 1, 29);
+			case pack_type::FIX_STR_0x1E: return get_string(value, 1, 30);
+			case pack_type::FIX_STR_0x1F: return get_string(value, 1, 31);
 			}
 
 			throw std::runtime_error("not string");
+		}
+
+		std::string get_string()const
+		{
+			std::string value;
+			get_string(value);
+			return value;
 		}
 
 		parser get_binary(std::vector<std::uint8_t> &value)const
@@ -1936,6 +1952,11 @@ namespace msgpackpp {
 	inline parser deserialize(const parser &u, std::vector<std::uint8_t> &value)
 	{
 		return u.get_binary(value);
+	}
+
+	inline parser deserialize(const parser &u, std::string &value)
+	{
+		return u.get_string(value);
 	}
 
 #pragma endregion

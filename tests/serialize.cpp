@@ -39,4 +39,6 @@ TEST_CASE("serialize")
 	Test(1.1);
 
 	Test(std::vector<std::uint8_t>{1, 2, 3});
+
+	Test(std::string(u8"“ú–{Œê"));
 }
