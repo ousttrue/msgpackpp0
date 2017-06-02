@@ -1,13 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project(msgpackpp) # .sln
-add_executable(tests 
-    include/msgpackpp.h
-    tests/tests.cpp
-    ) # .vcxproj
-include_directories(
-    include
-    tests
-    )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
@@ -15,6 +7,24 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 endif()
+
+add_executable(tests 
+    include/msgpackpp.h
+    tests/msgpack.cpp
+    ) # .vcxproj
+include_directories(
+    include
+    tests
+    )
+
+add_executable(serialize 
+    include/msgpackpp.h
+    tests/serialize.cpp
+    ) # .vcxproj
+include_directories(
+    include
+    tests
+    )
 
 add_executable(sample 
     include/msgpackpp.h
