@@ -111,12 +111,14 @@ namespace msgpackpp
 }
 ```
 
+```cpp
+Point p;
+msgpackpp::packer packer;
+packer << p;
+```
 # deserializer
 
 use ``operator>>``
-
-```cpp
-```
 
 ## define deserializer
 
@@ -147,6 +149,12 @@ namespace msgpackpp
         return uu;
     }
 }
+```
+
+```cpp
+auto parser=msgpackpp::parser(msgpack_bytes);
+Point p;
+parser >> p;
 ```
 
 # procedure call
