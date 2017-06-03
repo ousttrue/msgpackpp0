@@ -5,7 +5,7 @@
 int main(int argc, char **argv)
 {
     // pack
-	auto packer = msgpackpp::packer();
+	msgpackpp::packer packer;
     packer.pack_array(4);
     packer.pack_integer(0);
     packer.pack_integer(256);

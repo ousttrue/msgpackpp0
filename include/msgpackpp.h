@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <iosfwd>
 #include <sstream>
+#include <tuple>
+#include <utility>
+#include <type_traits>
 #include <assert.h>
 
 
@@ -1928,7 +1931,7 @@ namespace msgpackpp {
 		cdr(T&& t)
 	{
 		return cdr_impl(std::forward<T>(t),
-			std::make_index_sequence<std::tuple_size<std::remove_reference<T>::type>::value>{});
+			std::make_index_sequence<std::tuple_size<typename std::remove_reference<T>::type>::value>{});
 	}
 #pragma endregion
 
@@ -1988,7 +1991,7 @@ namespace msgpackpp {
 	template<typename... TS>
 	inline packer& serialize(packer &p, const std::tuple<TS...> &t)
 	{
-		auto size = std::tuple_size<std::remove_reference<decltype(t)>::type>::value;
+		auto size = std::tuple_size<typename std::remove_reference<decltype(t)>::type>::value;
 		p.pack_array(size);
 		return _serialize(t, p);
 	}
@@ -2055,7 +2058,7 @@ namespace msgpackpp {
 	inline parser deserialize(const parser &u, std::tuple<TS...> &value)
 	{
 		assert(u.is_array());
-		assert(u.count() == std::tuple_size<std::remove_reference<decltype(value)>::type>::value);
+		assert(u.count() == std::tuple_size<typename std::remove_reference<decltype(value)>::type>::value);
 		return _deserialize(value, u[0]);
 	}
 #pragma endregion

@@ -3,7 +3,7 @@ project(msgpackpp) # .sln
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unknown-pragmas -Wno-switch")
+    set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-unknown-pragmas -Wno-switch")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 endif()
