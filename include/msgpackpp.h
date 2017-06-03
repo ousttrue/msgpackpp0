@@ -10,6 +10,7 @@
 #include <tuple>
 #include <utility>
 #include <type_traits>
+#include <functional>
 #include <assert.h>
 
 
@@ -2070,6 +2071,73 @@ namespace msgpackpp {
 	{
 		p.to_json(os);
 		return os;
+	}
+#pragma endregion
+
+#pragma region procedure call
+	typedef std::vector<std::uint8_t> bytes;
+	typedef std::function<bytes(const bytes&)> procedurecall;
+
+	template<typename F, typename R, typename C, typename ...AS, std::size_t... IS>
+	procedurecall _make_procedurecall(const F &f
+		, R(C::*)(AS...)const
+		, std::index_sequence<IS...>
+	)
+	{
+		// request -> response ‚Å‚Í‚È‚­params -> result
+		return [f](const bytes& src)->bytes
+		{
+			// unpack args
+			auto parser = msgpackpp::parser(src);
+			std::tuple<AS...> args;
+			parser >> args;
+
+			// call
+			auto r = f(std::get<IS>(args)...);
+
+			// pack result
+			msgpackpp::packer packer;
+			packer << r;
+			return packer.get_payload();
+		};
+	}
+
+	template<typename F, typename R, typename C, typename ...AS>
+	procedurecall _make_procedurecall(F f
+		, R(C::*)(AS...)const
+	)
+	{
+		return _make_procedurecall(f
+			, &decltype(f)::operator()
+			, std::index_sequence_for<AS...>{}
+		);
+	}
+
+	template<typename F>
+	procedurecall make_procedurecall(F f)
+	{
+		return _make_procedurecall(f
+			, &decltype(f)::operator()
+		);
+	}
+
+	template<typename F, typename R, typename C, typename ...AS>
+	decltype(auto) _procedure_call(F f, R(C::*)(AS...)const, AS... args)
+	{
+		auto proc = make_procedurecall(f);
+		packer packer;
+		packer << std::make_tuple(args...);
+		auto result = proc(packer.get_payload());
+
+		R value;
+		parser(result) >> value;
+		return value;
+	}
+
+	template<typename F, typename ...AS>
+	decltype(auto) procedure_call(F f, AS... args)
+	{
+		return _procedure_call(f, &decltype(f)::operator(), args...);
 	}
 #pragma endregion
 }

@@ -64,25 +64,61 @@ method
 
 see [tests](tests/tests.cpp).
 
+# implemented types
+
+| c type                   | packer                 | parser            |
+| ------------------------ |:----------------------:|:-----------------:|
+| (void)                   | packer.pack_nil()      | (parser.is_nil()) |
+| bool                     | packer.pack_bool(is)   | parser.get_bool() |
+| char                     | packer.pack_integer(n) | parser.get_number<char>() |
+| short                    | packer.pack_integer(n) | parser.get_number<short>() |
+| int                      | packer.pack_integer(n) | parser.get_number<int>() |
+| long long                | packer.pack_integer(n) | parser.get_number<long long>() |
+| unsigned char            | packer.pack_integer(n) | parser.get_number<unsigned char>() |
+| unsigned short           | packer.pack_integer(n) | parser.get_number<unsigned short>() |
+| unsigned int             | packer.pack_integer(n) | parser.get_number<unsigned int>() |
+| unsigned long long       | packer.pack_integer(n) | parser.get_number<unsigned long long>() |
+| float                    | packer.pack_float(n)   | parser.get_number<float>() |
+| double                   | packer.pack_double(n)  | parser.get_number<double>() |
+| const char *             | packer.pack_str(str)   |              |
+| std::string              | packer.pack_str(str)   | parser.get_str() |
+| std::vector<std::uint8_t>| packer.pack_bin(bin)   | parser.get_bin() |
+| std::tuple<A...>         | packer << t(serializerr)| parser >> t(deserializer)|
+
 # serializer
-There is partial implementation for tests.
 
-## sample
+use ``operator<<``
 
-```cpp
-	packer& serialize(packer &p, const int &t)
-	{
-		return p.pack_integer(t);
-	}
-```
-
-## usage
+## define serializer
 
 ```cpp
-    auto packer = msgpackpp::packer();
-    packer.pack_array(3) << 1 << 2 << 3;
+namespace msgpackpp
+{
+    packer& serialize(packer &p, const T &t)
+    {
+        return p.pack_?(t);
+    }
+}
 ```
 
 # deserializer
-ToDo
+
+use ``operator>>``
+
+```cpp
+```
+
+## define deserializer
+
+```cpp
+namespace msgpackpp
+{
+    parser deserialize(const parser &u, T &t)
+    {
+        return u.get_?(t);
+    }
+}
+```
+
+# procedure call
 
