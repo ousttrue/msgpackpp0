@@ -2054,8 +2054,8 @@ namespace msgpackpp {
 	template<typename... TS>
 	inline parser deserialize(const parser &u, std::tuple<TS...> &value)
 	{
-		assert(u.is_array(), "is not array");
-		assert(u.count() == std::tuple_size<std::remove_reference<decltype(value)>::type>::value, "different array size");
+		assert(u.is_array());
+		assert(u.count() == std::tuple_size<std::remove_reference<decltype(value)>::type>::value);
 		return _deserialize(value, u[0]);
 	}
 #pragma endregion
