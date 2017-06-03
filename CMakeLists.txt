@@ -12,6 +12,7 @@ add_executable(tests
     include/msgpackpp.h
     tests/msgpack.cpp
     tests/serialize.cpp
+    tests/rpc.cpp
     ) # .vcxproj
 include_directories(
     include
