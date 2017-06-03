@@ -69,7 +69,7 @@ see [tests](tests/tests.cpp).
 | c type                       | packer                    | parser            |
 | ---------------------------- |:-------------------------:|:-----------------:|
 | ``(void)``                   |``packer.pack_nil()``      |``(parser.is_nil())``|
-| ``bool``                     |``packer.pack_bool(is)``   |``parser.get_bool()``|
+| ``bool``                     |``packer.pack_bool(b)``    |``parser.get_bool()``|
 | ``char``                     |``packer.pack_integer(n)`` |``parser.get_number<char>()``|
 | ``short``                    |``packer.pack_integer(n)`` |``parser.get_number<short>()``|
 | ``int``                      |``packer.pack_integer(n)`` |``parser.get_number<int>()``|
@@ -80,7 +80,7 @@ see [tests](tests/tests.cpp).
 | ``unsigned long long``       |``packer.pack_integer(n)`` |``parser.get_number<unsigned long long>()``|
 | ``float``                    |``packer.pack_float(n)``   |``parser.get_number<float>()``|
 | ``double``                   |``packer.pack_double(n)``  |``parser.get_number<double>()``|
-| ``const char *``             |``packer.pack_str(str)``   |``             |
+| ``const char *``             |``packer.pack_str(str)``   |             |
 | ``std::string``              |``packer.pack_str(str)``   |``parser.get_str()``|
 | ``std::vector<std::uint8_t>``|``packer.pack_bin(bin)``   |``parser.get_bin()``|
 | ``std::tuple<A...>``         |``packer << t(serializerr)``|`` parser >> t(deserializer)``|
@@ -92,11 +92,21 @@ use ``operator<<``
 ## define serializer
 
 ```cpp
+struct Point
+{
+    float x;
+    float y;
+};
+
 namespace msgpackpp
 {
-    packer& serialize(packer &p, const T &t)
+    packer& serialize(packer &p, const Point &t)
     {
-        return p.pack_?(t);
+        p.pack_map(2) 
+            << "x" << t.x
+            << "y" << t.y
+            ;
+        return p;
     }
 }
 ```
@@ -113,9 +123,28 @@ use ``operator>>``
 ```cpp
 namespace msgpackpp
 {
-    parser deserialize(const parser &u, T &t)
+    parser deserialize(const parser &u, Point &t)
     {
-        return u.get_?(t);
+        auto uu=u[0];
+        for(int i=0; i<u.count(); ++i)
+        {
+            if(uu.get_string()=="x"){
+                uu=u.next();
+                t.x=u.get_number<float>();
+                uu=u.next();
+            }
+            else if(uu.get_string()=="y"){
+                uu=u.next();
+                t.y=u.get_number<float>();
+                uu=u.next();
+            }
+            else{
+                // unknown key
+                assert(false);
+                uu=u.next();
+            }
+        }
+        return uu;
     }
 }
 ```
