@@ -2113,7 +2113,6 @@ namespace msgpackpp {
 		, std::index_sequence<IS...>
 	)
 	{
-		// request -> response ‚Å‚Í‚È‚­params -> result
 		return [f](const bytes& src)->bytes
 		{
 			// unpack args
