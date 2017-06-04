@@ -85,7 +85,7 @@ see [tests](tests/tests.cpp).
 | ``const char *``             |``packer.pack_str(str)``   |             |
 | ``std::string``              |``packer.pack_str(str)``   |``parser.get_str()``|
 | ``std::vector<std::uint8_t>``|``packer.pack_bin(bin)``   |``parser.get_bin()``|
-| ``std::tuple<A...>``         |``packer << t(serializerr)``|`` parser >> t(deserializer)``|
+| ``std::tuple<A...>``         |``packer << t``|`` parser >> t``|
 
 # usertype serializer & deserializer definition
 
