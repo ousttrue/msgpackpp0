@@ -1,7 +1,5 @@
 #include <msgpackpp.h>
-//#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch.hpp>
-#include <tuple>
 
 
 template<typename T>
@@ -18,6 +16,101 @@ void Test(T src)
 	parsed >> value;
 
 	REQUIRE(src == value);
+}
+
+
+struct Person
+{
+	std::string name;
+	int age;
+
+	bool operator==(const Person &rhs)const
+	{
+		return name == rhs.name && age == rhs.age;
+	}
+};
+namespace msgpackpp
+{
+	// Person p;
+	// msgpackpp::packer packer;
+	// packer << p;
+	void serialize(packer &packer, const Person &p)
+	{
+		packer.pack_map(2)
+			<< "name" << p.name
+			<< "age" << p.age
+			;
+	}
+
+	//  auto parser=msgpackpp::parser(msgpack_bytes);
+	//  Person p;
+	//  parser >> p;
+	parser deserialize(const parser &u, Person &p)
+	{
+		auto uu = u[0];
+		auto count = u.count();
+		for (int i = 0; i<count; ++i)
+		{
+			auto key = uu.get_string();
+			uu = uu.next();
+
+			if (key == "name") {
+				uu >> p.name;
+			}
+			else if (key == "age") {
+				uu >> p.age;
+			}
+			else {
+				// unknown key
+				assert(false);
+			}
+			uu = uu.next();
+		}
+		return uu;
+	}
+}
+
+
+struct Point
+{
+	float x;
+	float y;
+
+	bool operator==(const Point &rhs)const
+	{
+		return x == rhs.x && y == rhs.y;
+	}
+};
+namespace msgpackpp
+{
+	// Point p;
+	// msgpackpp::packer packer;
+	// packer << p;
+	void serialize(packer &packer, const Point &p)
+	{
+		packer.pack_array(2)
+			<< p.x
+			<< p.y
+			;
+	}
+
+	//  auto parser=msgpackpp::parser(msgpack_bytes);
+	//  Point p;
+	//  parser >> p;
+	parser deserialize(const parser &u, Point &p)
+	{
+		assert(u.count() == 2);
+
+		auto uu = u[0];
+
+		uu >> p.x;
+		uu = uu.next();
+
+		uu >> p.y;
+		uu = uu.next();
+
+		return uu;
+	}
 }
 
 
@@ -44,4 +137,8 @@ TEST_CASE("serialize")
 	Test(std::string(u8"“ú–{Œê"));
 
 	Test(std::make_tuple(true, 0, 1.5, std::string(u8"ABC")));
+
+	// user type
+	Test(Person{ "hoge", 100 });
+	Test(Point{ 1.5f, 2.5f });
 }

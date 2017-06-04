@@ -68,7 +68,7 @@ see [tests](tests/tests.cpp).
 
 # implemented types
 
-| c type                       | packer                    | parser            |
+| c++ type                     | packer                    | parser            |
 | ---------------------------- |:-------------------------:|:-----------------:|
 | ``(void)``                   |``packer.pack_nil()``      |``(parser.is_nil())``|
 | ``bool``                     |``packer.pack_bool(b)``    |``parser.get_bool()``|
@@ -98,6 +98,11 @@ struct Person
 {
     std::string name;
     int age;
+
+    bool operator==(const Person &rhs)const
+    {
+        return name == rhs.name && age == rhs.age;
+    }
 };
 ```
 
@@ -129,28 +134,24 @@ namespace msgpackpp
     //  parser >> p;
     parser deserialize(const parser &u, Person &p)
     {
-        auto uu=u[0];
-        auto count=u.count();
-        for(int i=0; i<count; ++i)
+        auto uu = u[0];
+        auto count = u.count();
+        for (int i = 0; i<count; ++i)
         {
-            auto key=uu.get_string();
-            if(key=="name"){
-                uu=u.next();
+            auto key = uu.get_string();
+            uu = uu.next();
 
-                uu >> p.name; 
-                uu=u.next();
+            if (key == "name") {
+                uu >> p.name;
             }
-            else if(key=="age"){
-                uu=u.next();
-
+            else if (key == "age") {
                 uu >> p.age;
-                uu=u.next();
             }
-            else{
+            else {
                 // unknown key
                 assert(false);
-                uu=u.next();
             }
+            uu = uu.next();
         }
         return uu;
     }
@@ -166,6 +167,11 @@ struct Point
 {
     float x;
     float y;
+
+    bool operator==(const Point &rhs)const
+    {
+        return x == rhs.x && y == rhs.y;
+    }
 };
 ```
 
@@ -194,15 +200,15 @@ namespace msgpackpp
     //  parser >> p;
     parser deserialize(const parser &u, Point &p)
     {
-        assert(u.count()==2);
+        assert(u.count() == 2);
 
-        auto uu=u[0];
+        auto uu = u[0];
 
         uu >> p.x;
-        uu=u.next();
+        uu = uu.next();
 
         uu >> p.y;
-        uu=u.next();
+        uu = uu.next();
 
         return uu;
     }
