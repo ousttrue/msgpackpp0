@@ -20,7 +20,8 @@ samples/sample.cpp
 int main(int argc, char **argv)
 {
     // pack
-    auto packer = msgpackpp::packer();
+    //auto packer = msgpackpp::packer(); // delete copy constructor
+    msgpackpp::packer packer;
     packer.pack_array(4);
     packer.pack_integer(0);
     packer.pack_integer(256);
@@ -35,7 +36,7 @@ int main(int argc, char **argv)
 
     // unpack
     auto u = msgpackpp::parser(p);
-    std::cout << u << std::endl; // json style for debug
+    std::cout << u.to_json() << std::endl; // json style for debug
 
     std::cout << u.is_array() << std::endl;
     std::cout << u[0].get_number<int>() << std::endl;
@@ -85,59 +86,62 @@ see [tests](tests/tests.cpp).
 | ``std::vector<std::uint8_t>``|``packer.pack_bin(bin)``   |``parser.get_bin()``|
 | ``std::tuple<A...>``         |``packer << t(serializerr)``|`` parser >> t(deserializer)``|
 
-# serializer
+# usertype serializer & deserializer definition
 
-use ``operator<<``
+## map type
 
-## define serializer
+depends on element name.
 
 ```cpp
-struct Point
+struct Person
 {
-    float x;
-    float y;
+    std::string name;
+    int age;
 };
+```
 
-namespace msgpackpp
+```json
 {
-    packer& serialize(packer &p, const Point &t)
-    {
-        p.pack_map(2) 
-            << "x" << t.x
-            << "y" << t.y
-            ;
-        return p;
-    }
+    name: "hoge",
+    age: 100,
 }
 ```
 
 ```cpp
-Point p;
-msgpackpp::packer packer;
-packer << p;
-```
-# deserializer
-
-use ``operator>>``
-
-## define deserializer
-
-```cpp
 namespace msgpackpp
 {
-    parser deserialize(const parser &u, Point &t)
+    // Person p;
+    // msgpackpp::packer packer;
+    // packer << p;
+    packer& serialize(packer &packer, const Person &p)
+    {
+        packer.pack_map(2) 
+            << "name" << p.name
+            << "age" << p.age
+            ;
+        return packer;
+    }
+
+    //  auto parser=msgpackpp::parser(msgpack_bytes);
+    //  Person p;
+    //  parser >> p;
+    parser deserialize(const parser &u, Person &p)
     {
         auto uu=u[0];
-        for(int i=0; i<u.count(); ++i)
+        auto count=u.count();
+        for(int i=0; i<count; ++i)
         {
-            if(uu.get_string()=="x"){
+            auto key=uu.get_string();
+            if(key=="name"){
                 uu=u.next();
-                t.x=u.get_number<float>();
+
+                uu >> p.name; 
                 uu=u.next();
             }
-            else if(uu.get_string()=="y"){
+            else if(key=="age"){
                 uu=u.next();
-                t.y=u.get_number<float>();
+
+                uu >> p.age;
                 uu=u.next();
             }
             else{
@@ -151,21 +155,70 @@ namespace msgpackpp
 }
 ```
 
+## array type
+
+depends on element order.
+
 ```cpp
-auto parser=msgpackpp::parser(msgpack_bytes);
-Point p;
-parser >> p;
+struct Point
+{
+    float x;
+    float y;
+};
+```
+
+```json
+[1.0, 2.0]
+```
+
+```cpp
+namespace msgpackpp
+{
+    // Point p;
+    // msgpackpp::packer packer;
+    // packer << p;
+    packer& serialize(packer &packer, const Point &p)
+    {
+        packer.pack_array(2) 
+            << p.x
+            << p.y
+            ;
+        return packer;
+    }
+
+    //  auto parser=msgpackpp::parser(msgpack_bytes);
+    //  Point p;
+    //  parser >> p;
+    parser deserialize(const parser &u, Point &p)
+    {
+        assert(u.count()==2);
+
+        // array type. depends element order
+        auto uu=u[0];
+
+        uu >> p.x;
+        uu=u.next();
+
+        uu >> p.y;
+        uu=u.next();
+
+        return uu;
+    }
+}
 ```
 
 # procedure call
 
+for rpc implementation.
+
 ```cpp
-auto proc = msgpackpp::make_procedurecall(f);
+auto callback=[](int a, int b){ return a+b; }
+auto proc = msgpackpp::make_procedurecall(callback);
 msgpackpp::packer packer;
-packer << std::make_tuple(args...);
+packer << std::make_tuple(1, 2);
 auto result = proc(packer.get_payload());
 
 R value;
-msgpackpp::parser(result) >> value;
+msgpackpp::parser(result) >> value; // value=3
 ```
 
