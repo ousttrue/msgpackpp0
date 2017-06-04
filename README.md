@@ -3,6 +3,7 @@ msgpack parser &amp; packer
 
 - header only
 - simple
+- c++14
 
 # msgpack spec
 - https://github.com/msgpack/msgpack/blob/master/spec.md
@@ -115,13 +116,12 @@ namespace msgpackpp
     // Person p;
     // msgpackpp::packer packer;
     // packer << p;
-    packer& serialize(packer &packer, const Person &p)
+    void serialize(packer &packer, const Person &p)
     {
         packer.pack_map(2) 
             << "name" << p.name
             << "age" << p.age
             ;
-        return packer;
     }
 
     //  auto parser=msgpackpp::parser(msgpack_bytes);
@@ -181,13 +181,12 @@ namespace msgpackpp
     // Point p;
     // msgpackpp::packer packer;
     // packer << p;
-    packer& serialize(packer &packer, const Point &p)
+    void serialize(packer &packer, const Point &p)
     {
         packer.pack_array(2) 
             << p.x
             << p.y
             ;
-        return packer;
     }
 
     //  auto parser=msgpackpp::parser(msgpack_bytes);

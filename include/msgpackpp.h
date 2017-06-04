@@ -1940,61 +1940,62 @@ namespace msgpackpp {
 	template<typename T>
 	inline packer& operator<<(packer &p, const T &t)
 	{
-		return serialize(p, t);
+		serialize(p, t);
+		return p;
 	}
 
-	inline packer& serialize(packer &p, const char* t)
+	inline void serialize(packer &p, const char* t)
 	{
-		return p.pack_str(t);
+		p.pack_str(t);
 	}
-	inline packer& serialize(packer &p, const std::string &t)
+	inline void serialize(packer &p, const std::string &t)
 	{
-		return p.pack_str(t);
+		p.pack_str(t);
 	}
-	inline packer& serialize(packer &p, const bool &t)
+	inline void serialize(packer &p, const bool &t)
 	{
-		return p.pack_bool(t);
+		p.pack_bool(t);
 	}
 
 	template<typename T>
-	inline packer& serialize(packer &p, const T &t)
+	inline void serialize(packer &p, const T &t)
 	{
-		return p.pack_integer(t);
+		p.pack_integer(t);
 	}
 
-	inline packer& serialize(packer &p, const float &t)
+	inline void serialize(packer &p, const float &t)
 	{
-		return p.pack_float(t);
+		p.pack_float(t);
 	}
-	inline packer& serialize(packer &p, const double &t)
+	inline void serialize(packer &p, const double &t)
 	{
-		return p.pack_double(t);
+		p.pack_double(t);
 	}
 
-	inline packer& serialize(packer &p, const std::vector<std::uint8_t> &t)
+	inline void serialize(packer &p, const std::vector<std::uint8_t> &t)
 	{
-		return p.pack_bin(t);
+		p.pack_bin(t);
 	}
 
 #pragma region serialize tuple
 	template<typename T>
-	inline packer& _serialize(const std::tuple<T> &t, packer &p)
-	{
-		return serialize(p, std::get<0>(t));
-	}
-	template<typename T, typename... TS>
-	inline packer& _serialize(const std::tuple<T, TS...> &t, packer &p)
+	inline void _serialize(const std::tuple<T> &t, packer &p)
 	{
 		serialize(p, std::get<0>(t));
-		return _serialize(cdr(t), p);
+	}
+	template<typename T, typename... TS>
+	inline void _serialize(const std::tuple<T, TS...> &t, packer &p)
+	{
+		serialize(p, std::get<0>(t));
+		_serialize(cdr(t), p);
 	}
 
 	template<typename... TS>
-	inline packer& serialize(packer &p, const std::tuple<TS...> &t)
+	inline void serialize(packer &p, const std::tuple<TS...> &t)
 	{
 		auto size = std::tuple_size<typename std::remove_reference<decltype(t)>::type>::value;
 		p.pack_array(size);
-		return _serialize(t, p);
+		_serialize(t, p);
 	}
 #pragma endregion
 #pragma endregion
