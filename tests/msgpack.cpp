@@ -563,7 +563,7 @@ TEST_CASE("array32")
 		REQUIRE(i == parsed[i].get_number<int>());
 	}
 
-	REQUIRE(count-1, parsed[count-1].get_number<int>());
+	REQUIRE(count-1==parsed[count-1].get_number<int>());
 }
 
 /// fixmap stores a map whose length is upto 15 elements

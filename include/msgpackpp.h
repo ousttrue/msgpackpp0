@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <assert.h>
 
 
@@ -1294,15 +1295,15 @@ namespace msgpackpp {
 		}
 
 	private:
-		parser get_string(std::string& value, size_t offset, size_t size)const
+		parser get_string(std::string_view& value, size_t offset, size_t size)const
 		{
 			auto head = m_p + offset;
-			value = std::string(head, head + size);
+			value = std::string_view((char*)head, size);
 			return advance(offset + size);
 		}
 
 	public:
-		parser get_string(std::string& value)const
+		parser get_string(std::string_view& value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			switch (type)
@@ -1347,14 +1348,14 @@ namespace msgpackpp {
 			throw std::runtime_error("not string");
 		}
 
-		std::string get_string()const
+		std::string_view get_string()const
 		{
-			std::string value;
+			std::string_view value;
 			get_string(value);
 			return value;
 		}
 
-		parser get_binary(std::vector<std::uint8_t> &value)const
+		parser get_binary_view(std::string_view &value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
 			switch (type)
@@ -1363,7 +1364,7 @@ namespace msgpackpp {
 			{
 				auto begin = m_p + 1 + 4;
 				auto n = body_number<std::uint32_t>();
-				value = std::vector<std::uint8_t>(begin, begin + n);
+				value = std::string_view((char*)begin, n);
 				return advance(1 + 4 + n);
 			}
 
@@ -1371,14 +1372,14 @@ namespace msgpackpp {
 			{
 				auto begin = m_p + 1 + 2;
 				auto n = body_number<std::uint16_t>();
-				value = std::vector<std::uint8_t>(begin, begin + n);
+				value = std::string_view((char*)begin, n);
 				return advance(1 + 2 + n);
 			}
 			case pack_type::BIN8:
 			{
 				auto begin = m_p + 1 + 1;
 				auto n = body_number<std::uint8_t>();
-				value = std::vector<std::uint8_t>(begin, begin + n);
+				value = std::string_view((char*)begin, n);
 				return advance(1 + 1 + n);
 			}
 			}
@@ -1386,10 +1387,25 @@ namespace msgpackpp {
 			throw std::runtime_error("not binary");
 		}
 
+		std::string_view get_binary_view()const
+		{
+			std::string_view bytes;
+			get_binary_view(bytes);
+			return bytes;
+		}
+
+		parser get_binary(std::vector<std::uint8_t> &value)const
+		{
+			std::string_view view;
+			auto parser = get_binary_view(view);
+			value=std::vector<std::uint8_t>(view.begin(), view.end());
+			return parser;
+		}
+
 		std::vector<std::uint8_t> get_binary()const
 		{
-			std::vector<std::uint8_t> bytes;
-			get_binary(bytes);
+			auto view = get_binary_view();
+			std::vector<std::uint8_t> bytes(view.begin(), view.end());
 			return bytes;
 		}
 
@@ -2034,7 +2050,10 @@ namespace msgpackpp {
 
 	inline parser deserialize(const parser &u, std::string &value)
 	{
-		return u.get_string(value);
+		std::string_view view;
+		auto uu=u.get_string(view);
+		value = view;
+		return uu;
 	}
 
 #pragma region deserialize tuple

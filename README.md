@@ -2,8 +2,8 @@
 msgpack parser &amp; packer
 
 - header only
-- simple
-- c++14
+- c++17(std::string_view)
+- test vs2017 only
 
 # msgpack spec
 - https://github.com/msgpack/msgpack/blob/master/spec.md
