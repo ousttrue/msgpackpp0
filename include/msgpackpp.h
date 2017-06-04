@@ -11,6 +11,7 @@
 #include <utility>
 #include <type_traits>
 #include <functional>
+#include <memory>
 #include <assert.h>
 
 
@@ -305,13 +306,14 @@ namespace msgpackpp {
 
 	class packer
 	{
-		std::vector<std::uint8_t> m_buffer;
+		typedef std::vector<std::uint8_t> buffer;
+		std::shared_ptr<buffer> m_buffer;
 
 	private:
 		template<class Range>
 		void push(const Range &r)
 		{
-			m_buffer.insert(m_buffer.end(), std::begin(r), std::end(r));
+			m_buffer->insert(m_buffer->end(), std::begin(r), std::end(r));
 		}
 
 		template<typename T>
@@ -321,18 +323,25 @@ namespace msgpackpp {
 			auto _p = reinterpret_cast<std::uint8_t*>(&n) + (size - 1);
 			for (size_t i = 0; i < size; ++i, --_p)
 			{
-				m_buffer.push_back(*_p);
+				m_buffer->push_back(*_p);
 			}
 		}
 
 	public:
-		packer() = default;
+		packer()
+			: m_buffer(new buffer)
+		{}
+
+		packer(const std::shared_ptr<buffer> &buffer)
+			: m_buffer(buffer)
+		{}
+
 		packer(const packer&) = delete;
 		packer& operator=(const packer&) = delete;
 
 		packer& pack_nil()
 		{
-			m_buffer.push_back(pack_type::NIL);
+			m_buffer->push_back(pack_type::NIL);
 			return *this;
 		}
 
@@ -343,29 +352,29 @@ namespace msgpackpp {
 			{
 				if (n >= -32)
 				{
-					m_buffer.push_back(pack_type::NEGATIVE_FIXNUM
+					m_buffer->push_back(pack_type::NEGATIVE_FIXNUM
 						| static_cast<std::uint8_t>((n + 32)));
 				}
 				else if (n >= std::numeric_limits<std::int8_t>::min())
 				{
-					m_buffer.push_back(pack_type::INT8);
-					m_buffer.push_back(n);
+					m_buffer->push_back(pack_type::INT8);
+					m_buffer->push_back(n);
 				}
 				else if (n >= std::numeric_limits<std::int16_t>::min())
 				{
-					m_buffer.push_back(pack_type::INT16);
+					m_buffer->push_back(pack_type::INT16);
 					// network byteorder
 					push_number_reverse(static_cast<std::int16_t>(n));
 				}
 				else if (n >= std::numeric_limits<std::int32_t>::min())
 				{
-					m_buffer.push_back(pack_type::INT32);
+					m_buffer->push_back(pack_type::INT32);
 					// network byteorder
 					push_number_reverse(static_cast<std::int32_t>(n));
 				}
 				else if (n >= std::numeric_limits<std::int64_t>::min())
 				{
-					m_buffer.push_back(pack_type::INT64);
+					m_buffer->push_back(pack_type::INT64);
 					// network byteorder
 					push_number_reverse(static_cast<std::int64_t>(n));
 				}
@@ -376,27 +385,27 @@ namespace msgpackpp {
 			else {
 				if (n <= 0x7F)
 				{
-					m_buffer.push_back(static_cast<std::uint8_t>(n));
+					m_buffer->push_back(static_cast<std::uint8_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint8_t>::max())
 				{
-					m_buffer.push_back(pack_type::UINT8);
-					m_buffer.push_back(static_cast<std::uint8_t>(n));
+					m_buffer->push_back(pack_type::UINT8);
+					m_buffer->push_back(static_cast<std::uint8_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint16_t>::max())
 				{
-					m_buffer.push_back(pack_type::UINT16);
+					m_buffer->push_back(pack_type::UINT16);
 					// network byteorder
 					push_number_reverse(static_cast<std::uint16_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint32_t>::max())
 				{
-					m_buffer.push_back(pack_type::UINT32);
+					m_buffer->push_back(pack_type::UINT32);
 					// network byteorder
 					push_number_reverse(static_cast<std::uint32_t>(n));
 				}
 				else if (n <= std::numeric_limits<std::uint64_t>::max()) {
-					m_buffer.push_back(pack_type::UINT64);
+					m_buffer->push_back(pack_type::UINT64);
 					// network byteorder
 					push_number_reverse(static_cast<std::uint64_t>(n));
 				}
@@ -409,14 +418,14 @@ namespace msgpackpp {
 
 		packer& pack_float(float n)
 		{
-			m_buffer.push_back(pack_type::FLOAT);
+			m_buffer->push_back(pack_type::FLOAT);
 			push_number_reverse(n);
 			return *this;
 		}
 
 		packer& pack_double(double n)
 		{
-			m_buffer.push_back(pack_type::DOUBLE);
+			m_buffer->push_back(pack_type::DOUBLE);
 			push_number_reverse(n);
 			return *this;
 		}
@@ -424,10 +433,10 @@ namespace msgpackpp {
 		packer& pack_bool(bool isTrue)
 		{
 			if (isTrue) {
-				m_buffer.push_back(pack_type::TRUE);
+				m_buffer->push_back(pack_type::TRUE);
 			}
 			else {
-				m_buffer.push_back(pack_type::FALSE);
+				m_buffer->push_back(pack_type::FALSE);
 			}
 			return *this;
 		}
@@ -443,24 +452,24 @@ namespace msgpackpp {
 			auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
 			if (size < 32)
 			{
-				m_buffer.push_back(pack_type::FIX_STR | static_cast<std::uint8_t>(size));
+				m_buffer->push_back(pack_type::FIX_STR | static_cast<std::uint8_t>(size));
 				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint8_t>::max())
 			{
-				m_buffer.push_back(pack_type::STR8);
-				m_buffer.push_back(static_cast<std::uint8_t>(size));
+				m_buffer->push_back(pack_type::STR8);
+				m_buffer->push_back(static_cast<std::uint8_t>(size));
 				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint16_t>::max())
 			{
-				m_buffer.push_back(pack_type::STR16);
+				m_buffer->push_back(pack_type::STR16);
 				push_number_reverse(static_cast<std::uint16_t>(size));
 				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint32_t>::max())
 			{
-				m_buffer.push_back(pack_type::STR32);
+				m_buffer->push_back(pack_type::STR32);
 				push_number_reverse(static_cast<std::uint32_t>(size));
 				push(r);
 			}
@@ -476,19 +485,19 @@ namespace msgpackpp {
 			auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
 			if (size <= std::numeric_limits<std::uint8_t>::max())
 			{
-				m_buffer.push_back(pack_type::BIN8);
-				m_buffer.push_back(static_cast<std::uint8_t>(size));
+				m_buffer->push_back(pack_type::BIN8);
+				m_buffer->push_back(static_cast<std::uint8_t>(size));
 				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint16_t>::max())
 			{
-				m_buffer.push_back(pack_type::BIN16);
+				m_buffer->push_back(pack_type::BIN16);
 				push_number_reverse(static_cast<std::uint16_t>(size));
 				push(r);
 			}
 			else if (size <= std::numeric_limits<std::uint32_t>::max())
 			{
-				m_buffer.push_back(pack_type::BIN32);
+				m_buffer->push_back(pack_type::BIN32);
 				push_number_reverse(static_cast<std::uint32_t>(size));
 				push(r);
 			}
@@ -502,16 +511,16 @@ namespace msgpackpp {
 		{
 			if (n <= 15)
 			{
-				m_buffer.push_back(pack_type::FIX_ARRAY | static_cast<std::uint8_t>(n));
+				m_buffer->push_back(pack_type::FIX_ARRAY | static_cast<std::uint8_t>(n));
 			}
 			else if (n <= std::numeric_limits<std::uint16_t>::max())
 			{
-				m_buffer.push_back(pack_type::ARRAY16);
+				m_buffer->push_back(pack_type::ARRAY16);
 				push_number_reverse(static_cast<std::uint16_t>(n));
 			}
 			else if (n <= std::numeric_limits<std::uint32_t>::max())
 			{
-				m_buffer.push_back(pack_type::ARRAY32);
+				m_buffer->push_back(pack_type::ARRAY32);
 				push_number_reverse(static_cast<std::uint32_t>(n));
 			}
 			else {
@@ -524,16 +533,16 @@ namespace msgpackpp {
 		{
 			if (n <= 15)
 			{
-				m_buffer.push_back(pack_type::FIX_MAP | static_cast<std::uint8_t>(n));
+				m_buffer->push_back(pack_type::FIX_MAP | static_cast<std::uint8_t>(n));
 			}
 			else if (n <= std::numeric_limits<std::uint16_t>::max())
 			{
-				m_buffer.push_back(pack_type::MAP16);
+				m_buffer->push_back(pack_type::MAP16);
 				push_number_reverse(static_cast<std::uint16_t>(n));
 			}
 			else if (n <= std::numeric_limits<std::uint32_t>::max())
 			{
-				m_buffer.push_back(pack_type::MAP32);
+				m_buffer->push_back(pack_type::MAP32);
 				push_number_reverse(static_cast<std::uint32_t>(n));
 			}
 			else {
@@ -542,7 +551,7 @@ namespace msgpackpp {
 			return *this;
 		}
 
-		const std::vector<std::uint8_t> &get_payload()const { return m_buffer; }
+		const buffer &get_payload()const { return *m_buffer; }
 	};
 
 	class parser

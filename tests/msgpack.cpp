@@ -536,10 +536,15 @@ TEST_CASE("array16")
 /// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
 TEST_CASE("array32")
 {
-	msgpackpp::packer packer;
 	// packing
-	packer.pack_array(0xFFFF + 1);
-	for (auto i = 0; i < 0xFFFF + 1; ++i) {
+	auto count = static_cast<unsigned int>(0xFFFF+1);
+	auto payload=std::make_shared<std::vector<std::uint8_t>>(count);
+	payload->clear();
+
+	msgpackpp::packer packer(payload);
+
+	packer.pack_array(count);
+	for (auto i = 0; i < count; ++i) {
 		packer << i;
 	}
 	auto p = packer.get_payload();
@@ -552,11 +557,13 @@ TEST_CASE("array32")
 	REQUIRE(parsed.is_array());
 
 	// array
-	REQUIRE(0xFFFF + 1 == parsed.count());
+	REQUIRE(count == parsed.count());
 
-	for (auto i = 0; i < parsed.count(); i+=1000) {
+	for (auto i = 0; i < count; i+=1000) {
 		REQUIRE(i == parsed[i].get_number<int>());
 	}
+
+	REQUIRE(count-1, parsed[count-1].get_number<int>());
 }
 
 /// fixmap stores a map whose length is upto 15 elements
