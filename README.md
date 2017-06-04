@@ -100,10 +100,12 @@ struct Person
 };
 ```
 
+json representation.
+
 ```json
 {
-    name: "hoge",
-    age: 100,
+    "name": "hoge",
+    "age": 100,
 }
 ```
 
@@ -167,8 +169,10 @@ struct Point
 };
 ```
 
+json representation.
+
 ```json
-[1.0, 2.0]
+[1.0, 2.0] // [x, y]
 ```
 
 ```cpp
@@ -193,7 +197,6 @@ namespace msgpackpp
     {
         assert(u.count()==2);
 
-        // array type. depends element order
         auto uu=u[0];
 
         uu >> p.x;
