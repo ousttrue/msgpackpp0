@@ -2156,7 +2156,7 @@ namespace msgpackpp {
 
 #pragma region procedure call
 	typedef std::vector<std::uint8_t> bytes;
-	typedef std::function<bytes(const bytes&)> procedurecall;
+	typedef std::function<bytes(const parser&)> procedurecall;
 
 	template<typename F, typename R, typename C, typename ...AS, std::size_t... IS>
 	procedurecall _make_procedurecall(const F &f
@@ -2164,10 +2164,9 @@ namespace msgpackpp {
 		, std::index_sequence<IS...>
 	)
 	{
-		return [f](const bytes& src)->bytes
+		return [f](const parser& parser)->bytes
 		{
 			// unpack args
-			auto parser = msgpackpp::parser(src);
 			std::tuple<AS...> args;
 			parser >> args;
 
