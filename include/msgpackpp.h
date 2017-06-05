@@ -39,29 +39,29 @@ namespace std {
 
 		bool operator==(const string &rhs)const
 		{
-			return std::equal(begin(), end(), rhs.begin(), rhs.end());
+			return equal(begin(), end(), rhs.begin(), rhs.end());
 		}
 
 		bool operator==(const string_view &rhs)const
 		{
-			return std::equal(begin(), end(), rhs.begin(), rhs.end());
+			return equal(begin(), end(), rhs.begin(), rhs.end());
 		}
 
-		operator std::string() const
+		operator string() const
 		{
-			return std::string(begin(), end());
+			return string(begin(), end());
 		}
 	};
 
 	inline ostream& operator<<(ostream &os, const string_view &view)
 	{
-		os << std::string(view.begin(), view.begin()+view.size());
+		os << string(view.begin(), view.begin()+view.size());
 		return os;
 	}
 
-	inline bool operator==(const std::string &lhs, const string_view &rhs)
+	inline bool operator==(const string &lhs, const string_view &rhs)
 	{
-		return std::equal(lhs.begin(), lhs.end(), begin(rhs), end(rhs));
+		return equal(lhs.begin(), lhs.end(), begin(rhs), end(rhs));
 	}
 }
 #endif
