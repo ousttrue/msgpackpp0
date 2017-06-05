@@ -2181,7 +2181,7 @@ namespace msgpackpp {
 			parser >> args;
 
 			// call
-			auto r = f(std::get<IS>(args)...);
+			auto r = f(std::move(std::get<IS>(args))...);
 
 			// pack result
 			msgpackpp::packer packer;
