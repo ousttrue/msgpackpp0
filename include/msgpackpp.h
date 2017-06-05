@@ -2054,11 +2054,16 @@ namespace msgpackpp {
 	}
 
 #pragma region serialize tuple
+	inline void _serialize(const std::tuple<> &t, packer &p)
+	{
+	}
+
 	template<typename T>
 	inline void _serialize(const std::tuple<T> &t, packer &p)
 	{
 		serialize(p, std::get<0>(t));
 	}
+
 	template<typename T, typename... TS>
 	inline void _serialize(const std::tuple<T, TS...> &t, packer &p)
 	{
@@ -2108,6 +2113,11 @@ namespace msgpackpp {
 	}
 
 #pragma region deserialize tuple
+	inline parser _deserialize(std::tuple<> &value, const parser &u)
+	{
+		return u;
+	}
+
 	template<typename T>
 	inline parser _deserialize(std::tuple<T> &value, const parser &u)
 	{
