@@ -2168,6 +2168,41 @@ namespace msgpackpp {
 	typedef std::vector<std::uint8_t> bytes;
 	typedef std::function<bytes(const parser&)> procedurecall;
 
+#pragma region void
+	template<typename F, typename C, typename ...AS, std::size_t... IS>
+	procedurecall _make_procedurecall(const F &f
+		, void(C::*)(AS...)const
+		, std::index_sequence<IS...>
+	)
+	{
+		return [f](const parser& parser)->bytes
+		{
+			// unpack args
+			std::tuple<AS...> args;
+			parser >> args;
+
+			// call
+			f(std::move(std::get<IS>(args))...);
+
+			// pack result
+			msgpackpp::packer packer;
+			packer.pack_nil();
+			return packer.get_payload();
+		};
+	}
+
+	template<typename F, typename C, typename ...AS>
+	procedurecall _make_procedurecall(F f
+		, void(C::*)(AS...)const
+	)
+	{
+		return _make_procedurecall(f
+			, &decltype(f)::operator()
+			, std::index_sequence_for<AS...>{}
+		);
+	}
+#pragma endregion
+
 	template<typename F, typename R, typename C, typename ...AS, std::size_t... IS>
 	procedurecall _make_procedurecall(const F &f
 		, R(C::*)(AS...)const
