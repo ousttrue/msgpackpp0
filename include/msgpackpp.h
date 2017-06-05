@@ -41,9 +41,15 @@ namespace std {
 		{
 			return std::equal(begin(), end(), rhs.begin(), rhs.end());
 		}
+
 		bool operator==(const string_view &rhs)const
 		{
 			return std::equal(begin(), end(), rhs.begin(), rhs.end());
+		}
+
+		operator std::string() const
+		{
+			return std::string(begin(), end());
 		}
 	};
 
@@ -277,8 +283,8 @@ namespace msgpackpp {
 
 		NIL = 0xC0,
 		NEVER_USED = 0xC1,
-		FALSE = 0xC2,
-		TRUE = 0xC3,
+		False = 0xC2, // avoid match windows False
+		True = 0xC3, // avoid match windows True
 
 		BIN8 = 0xC4,
 		BIN16 = 0xC5,
@@ -356,12 +362,6 @@ namespace msgpackpp {
 		std::shared_ptr<buffer> m_buffer;
 
 	private:
-		template<class Range>
-		void push(const Range &r)
-		{
-			m_buffer->insert(m_buffer->end(), std::begin(r), std::end(r));
-		}
-
 		template<typename T>
 		void push_number_reverse(T n)
 		{
@@ -384,6 +384,12 @@ namespace msgpackpp {
 
 		packer(const packer&) = delete;
 		packer& operator=(const packer&) = delete;
+
+		template<class Range>
+		void push(const Range &r)
+		{
+			m_buffer->insert(m_buffer->end(), std::begin(r), std::end(r));
+		}
 
 		packer& pack_nil()
 		{
@@ -479,10 +485,10 @@ namespace msgpackpp {
 		packer& pack_bool(bool isTrue)
 		{
 			if (isTrue) {
-				m_buffer->push_back(pack_type::TRUE);
+				m_buffer->push_back(pack_type::True);
 			}
 			else {
-				m_buffer->push_back(pack_type::FALSE);
+				m_buffer->push_back(pack_type::False);
 			}
 			return *this;
 		}
@@ -850,8 +856,8 @@ namespace msgpackpp {
 
 			case NIL: return 1;
 			case NEVER_USED: throw std::runtime_error("no size");
-			case FALSE: return 1;
-			case TRUE: return 1;
+			case False: return 1;
+			case True: return 1;
 
 			case BIN8: return 1 + 1;
 			case BIN16: return 1 + 2;
@@ -1145,8 +1151,8 @@ namespace msgpackpp {
 
 			case NIL: return 0;
 			case NEVER_USED: throw std::runtime_error("no size");
-			case FALSE: return 0;
-			case TRUE: return 0;
+			case False: return 0;
+			case True: return 0;
 
 			case BIN8: return body_number<std::uint8_t>();
 			case BIN16: return body_number<std::uint16_t>();
@@ -1326,8 +1332,8 @@ namespace msgpackpp {
 		parser get_bool(bool &value)const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
-			if (type == pack_type::TRUE) value=true;
-			else if (type == pack_type::FALSE) value=false;
+			if (type == pack_type::True) value=true;
+			else if (type == pack_type::False) value=false;
 			else throw std::runtime_error("not bool");
 			return advance(1);
 		}
@@ -1535,7 +1541,7 @@ namespace msgpackpp {
 		bool is_bool()const
 		{
 			auto type = static_cast<pack_type>(m_p[0]);
-			return type == pack_type::TRUE || type == pack_type::FALSE;
+			return type == pack_type::True || type == pack_type::False;
 		}
 
 		bool is_number()const
