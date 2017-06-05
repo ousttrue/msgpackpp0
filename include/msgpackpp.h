@@ -12,8 +12,53 @@
 #include <type_traits>
 #include <functional>
 #include <memory>
-#include <string_view>
 #include <assert.h>
+
+
+#if _HAS_CXX17
+#include <string_view>
+#else
+namespace std {
+	class string_view
+	{
+		const char *m_p;
+		size_t m_size;
+
+	public:
+		string_view()
+			: m_p(0), m_size(0)
+		{}
+
+		string_view(const char* p, size_t size)
+			: m_p(p), m_size(size)
+		{}	
+
+		const char* begin()const { return m_p; }
+		size_t size()const { return m_size; }
+		const char* end()const { return m_p+m_size; }
+
+		bool operator==(const string &rhs)const
+		{
+			return std::equal(begin(), end(), rhs.begin(), rhs.end());
+		}
+		bool operator==(const string_view &rhs)const
+		{
+			return std::equal(begin(), end(), rhs.begin(), rhs.end());
+		}
+	};
+
+	inline ostream& operator<<(ostream &os, const string_view &view)
+	{
+		os << std::string(view.begin(), view.begin()+view.size());
+		return os;
+	}
+
+	inline bool operator==(const std::string &lhs, const string_view &rhs)
+	{
+		return std::equal(lhs.begin(), lhs.end(), begin(rhs), end(rhs));
+	}
+}
+#endif
 
 
 namespace msgpackpp {
@@ -2052,7 +2097,7 @@ namespace msgpackpp {
 	{
 		std::string_view view;
 		auto uu=u.get_string(view);
-		value = view;
+		value.assign(view.begin(), view.end());
 		return uu;
 	}
 
