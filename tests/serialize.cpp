@@ -131,6 +131,8 @@ TEST_CASE("serialize")
 	Test(std::numeric_limits<std::int32_t>::min() - 1);
 	Test(1.1f);
 	Test(1.1);
+    Test(std::vector<int>{1, 2, 3});
+    Test(std::vector<std::string>{"a", "ab", "hoge"});
 
 	Test(std::vector<std::uint8_t>{1, 2, 3});
 
