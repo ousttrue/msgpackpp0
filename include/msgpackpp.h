@@ -14,6 +14,62 @@
 #include <memory>
 #include <assert.h>
 
+#pragma warning(push)
+#pragma warning(disable:4244)
+#pragma warning(disable:4996)
+#pragma warning(disable:4018)
+
+#if _HAS_CXX17
+#include <string_view>
+#else
+namespace std {
+	class string_view
+	{
+		const char *m_p;
+		size_t m_size;
+
+	public:
+		string_view()
+			: m_p(0), m_size(0)
+		{}
+
+		string_view(const char* p, size_t size)
+			: m_p(p), m_size(size)
+		{}	
+
+		const char* begin()const { return m_p; }
+		size_t size()const { return m_size; }
+		const char* end()const { return m_p+m_size; }
+
+		bool operator==(const string &rhs)const
+		{
+			return equal(begin(), end(), rhs.begin(), rhs.end());
+		}
+
+		bool operator==(const string_view &rhs)const
+		{
+			return equal(begin(), end(), rhs.begin(), rhs.end());
+		}
+
+		operator string() const
+		{
+			return string(begin(), end());
+		}
+	};
+
+	inline ostream& operator<<(ostream &os, const string_view &view)
+	{
+		os << string(view.begin(), view.begin()+view.size());
+		return os;
+	}
+
+	inline bool operator==(const string &lhs, const string_view &rhs)
+	{
+		return equal(lhs.begin(), lhs.end(), begin(rhs), end(rhs));
+	}
+}
+#endif
+
 
 #if _HAS_CXX17
 #include <string_view>
@@ -2024,33 +2080,51 @@ namespace msgpackpp {
 	{
 		p.pack_str(t);
 	}
-	inline void serialize(packer &p, const std::string &t)
-	{
-		p.pack_str(t);
-	}
-	inline void serialize(packer &p, const bool &t)
+	inline void serialize(packer &p, bool t)
 	{
 		p.pack_bool(t);
 	}
 
-	template<typename T>
-	inline void serialize(packer &p, const T &t)
+	inline void serialize(packer &p, signed char t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, signed short t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, signed int t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, signed long long t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, unsigned char t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, unsigned short t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, unsigned int t)
+	{
+		p.pack_integer(t);
+	}
+	inline void serialize(packer &p, unsigned long long t)
 	{
 		p.pack_integer(t);
 	}
 
-	inline void serialize(packer &p, const float &t)
+	inline void serialize(packer &p, float t)
 	{
 		p.pack_float(t);
 	}
-	inline void serialize(packer &p, const double &t)
+	inline void serialize(packer &p, double t)
 	{
 		p.pack_double(t);
-	}
-
-	inline void serialize(packer &p, const std::vector<std::uint8_t> &t)
-	{
-		p.pack_bin(t);
 	}
 
 #pragma region serialize tuple
@@ -2093,23 +2167,45 @@ namespace msgpackpp {
 		return u.get_bool(value);
 	}
 
-	template<typename T>
-	inline parser deserialize(const parser &u, T &value)
+	inline parser deserialize(const parser &u, signed char &value)
 	{
 		return u.get_number(value);
 	}
-
-	inline parser deserialize(const parser &u, std::vector<std::uint8_t> &value)
+	inline parser deserialize(const parser &u, signed short &value)
 	{
-		return u.get_binary(value);
+		return u.get_number(value);
 	}
-
-	inline parser deserialize(const parser &u, std::string &value)
+	inline parser deserialize(const parser &u, signed int &value)
 	{
-		std::string_view view;
-		auto uu=u.get_string(view);
-		value.assign(view.begin(), view.end());
-		return uu;
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, signed long long &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, unsigned char &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, unsigned short &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, unsigned int &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, unsigned long long &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, float &value)
+	{
+		return u.get_number(value);
+	}
+	inline parser deserialize(const parser &u, double &value)
+	{
+		return u.get_number(value);
 	}
 
 #pragma region deserialize tuple
@@ -2149,11 +2245,69 @@ namespace msgpackpp {
 	inline parser deserialize(const parser &u, std::tuple<TS...> &value)
 	{
 		assert(u.is_array());
-		assert(u.count() == std::tuple_size<typename std::remove_reference<decltype(value)>::type>::value);
+		if (u.count() != std::tuple_size<typename std::remove_reference<decltype(value)>::type>::value)
+		{
+			throw std::runtime_error("invalid arguments count");
+		}
 		return _deserialize(value, u[0]);
 	}
 #pragma endregion
 #pragma endregion
+
+#pragma region Range serialization
+    template <typename Range>
+	inline void serialize(packer &p, const Range &value)
+	{
+        auto b=std::begin(value);
+        auto e=std::end(value);
+		p.pack_array(std::distance(b, e));
+		for (auto it=b; it!=e; ++it)
+		{
+			p << *it;
+		}
+	}
+    template <typename Range>
+	inline parser deserialize(const parser &u, Range &value)
+	{
+		auto count = u.count();
+		value.resize(count);
+		auto uu = u[0];
+        for(auto &v: value)
+		//for (int i = 0; i < count; ++i)
+		{
+			uu >> v;
+			uu = uu.next();
+		}
+		return uu;
+	}
+
+    template<>
+	inline void serialize<std::vector<std::uint8_t>>(packer &p, const std::vector<std::uint8_t> &t)
+	{
+		p.pack_bin(t);
+	}
+    template<>
+	inline parser deserialize<std::vector<std::uint8_t>>(const parser &u, std::vector<std::uint8_t> &value)
+	{
+		return u.get_binary(value);
+	}
+
+    template<>
+	inline parser deserialize<std::string>(const parser &u, std::string &value)
+	{
+		std::string_view view;
+		auto uu=u.get_string(view);
+		value.assign(view.begin(), view.end());
+		return uu;
+	}
+
+    template<>
+	inline void serialize<std::string>(packer &p, const std::string &t)
+	{
+		p.pack_str(t);
+	}
+
+#pragma region
 
 #pragma region stream out
 	// json like
@@ -2165,8 +2319,8 @@ namespace msgpackpp {
 #pragma endregion
 
 #pragma region procedure call
-	typedef std::vector<std::uint8_t> bytes;
-	typedef std::function<bytes(const parser&)> procedurecall;
+	using bytes=std::vector<std::uint8_t>;
+	using procedurecall=std::function<bytes(const parser&)>;
 
 #pragma region void
 	template<typename F, typename C, typename ...AS, std::size_t... IS>
@@ -2264,3 +2418,5 @@ namespace msgpackpp {
 	}
 #pragma endregion
 }
+
+#pragma warning(pop)
