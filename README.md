@@ -158,6 +158,12 @@ namespace msgpackpp
 }
 ```
 
+use helper macro.
+
+```
+MPPP_MAP_SERIALIZER(Person, 2, name, age)
+```
+
 ## array type
 
 depends on element order.
@@ -213,6 +219,11 @@ namespace msgpackpp
         return uu;
     }
 }
+```
+
+use helper macro.
+```
+MPPP_ARRAY_SERIALIZER(Point, 2, x, y);
 ```
 
 # procedure call
