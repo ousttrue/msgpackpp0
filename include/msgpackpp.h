@@ -52,9 +52,14 @@ namespace std {
 			return equal(begin(), end(), rhs.begin(), rhs.end());
 		}
 
-		operator string() const
+		string str()const
 		{
 			return string(begin(), end());
+		}
+
+		operator string() const
+		{
+			str();
 		}
 	};
 
