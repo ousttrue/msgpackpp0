@@ -59,7 +59,7 @@ namespace std {
 
 		operator string() const
 		{
-			str();
+			return str();
 		}
 	};
 
