@@ -2417,6 +2417,85 @@ namespace msgpackpp {
 		return _procedure_call(f, &decltype(f)::operator(), args...);
 	}
 #pragma endregion
-}
+} // namespace
+
+/// https://stackoverflow.com/questions/36925989/how-to-define-recursive-variadic-macros
+#define MPPP_EXPAND( x ) x
+#define MPPP_CAT_I(x, y) x ## y
+#define MPPP_CAT(x, y) MPPP_CAT_I(x, y)
+
+#pragma region PACK_MAP
+#define MPPP_PACK_KV(v, k) << #k << (v).k
+#define MPPP_PACK_KV_1(v, k0) MPPP_PACK_KV(v, k0)
+#define MPPP_PACK_KV_2(v, k0, k1) MPPP_PACK_KV_1(v, k0) MPPP_PACK_KV(v, k1)
+#define MPPP_PACK_KV_3(v, k0, k1, k2) MPPP_PACK_KV_2(v, k0, k1) MPPP_PACK_KV(v, k2)
+#define MPPP_PACK_KV_4(v, k0, k1, k2, k3) MPPP_PACK_KV_3(v, k0, k1, k2) MPPP_PACK_KV(v, k3)
+#define MPPP_PACK_KV_5(v, k0, k1, k2, k3, k4) MPPP_PACK_KV_4(v, k0, k1, k2, k3) MPPP_PACK_KV(v, k4)
+#define MPPP_PACK_KV_N(n, v, ...) p.pack_map(n); p MPPP_CAT(MPPP_PACK_KV_, n)MPPP_EXPAND((v, __VA_ARGS__))
+#define MPPP_PACK_KV_TYPE(TYPE, n, ...) inline void serialize(packer &p, const TYPE &value){ MPPP_PACK_KV_N MPPP_EXPAND((n, value, __VA_ARGS__)); }
+#define MPPP_PACK_KV_SHARED(TYPE, n, ...) inline void serialize(packer &p, const std::shared_ptr<TYPE> &value){ MPPP_PACK_KV_N MPPP_EXPAND((n, *value, __VA_ARGS__)); }
+#pragma endregion
+
+#pragma region UNPACK_MAP
+#define MPPP_UNPACK_KV(v, k) else if(key==#k) uu >> (v).k;
+#define MPPP_UNPACK_KV_1(v, k0) MPPP_UNPACK_KV(v, k0)
+#define MPPP_UNPACK_KV_2(v, k0, k1) MPPP_UNPACK_KV_1(v, k0) MPPP_UNPACK_KV(v, k1)
+#define MPPP_UNPACK_KV_3(v, k0, k1, k2) MPPP_UNPACK_KV_2(v, k0, k1) MPPP_UNPACK_KV(v, k2)
+#define MPPP_UNPACK_KV_4(v, k0, k1, k2, k3) MPPP_UNPACK_KV_3(v, k0, k1, k2) MPPP_UNPACK_KV(v, k3)
+#define MPPP_UNPACK_KV_5(v, k0, k1, k2, k3, k4) MPPP_UNPACK_KV_4(v, k0, k1, k2, k3) MPPP_UNPACK_KV(v, k4)
+#define MPPP_UNPACK_KV_N(n, v, ...) MPPP_UNPACK_KV_BEGIN() MPPP_CAT(MPPP_UNPACK_KV_, n)MPPP_EXPAND((v, __VA_ARGS__)) MPPP_UNPACK_KV_END()
+#define MPPP_UNPACK_KV_TYPE(TYPE, n, ...) inline parser deserialize(const parser &u, TYPE &value){ MPPP_UNPACK_KV_N MPPP_EXPAND((n, value, __VA_ARGS__)); }
+#define MPPP_UNPACK_KV_SHARED(TYPE, n, ...) inline parser deserialize(const parser &u, std::shared_ptr<TYPE> &value){ if(!value){ value=std::make_shared<TYPE>(); } MPPP_UNPACK_KV_N MPPP_EXPAND((n, *value, __VA_ARGS__)); }
+
+#define MPPP_UNPACK_KV_BEGIN() \
+auto count = u.count();\
+auto uu = u[0];\
+for (int i = 0; i < count; ++i)\
+{\
+	std::string key;\
+	uu >> key;\
+	uu = uu.next();\
+\
+	if (false) {}\
+
+
+#define MPPP_UNPACK_KV_END() \
+			else {\
+			}\
+			uu = uu.next();\
+}\
+return uu;\
+
+#pragma endregion
+
+#define MPPP_MAP_SERIALIZER(TYPE, n, ...) namespace msgpackpp { MPPP_PACK_KV_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) MPPP_UNPACK_KV_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) }
+#define MPPP_MAP_SERIALIZER_SHAREDP(TYPE, n, ...) namespace msgpackpp { MPPP_PACK_KV_SHARED MPPP_EXPAND((TYPE, n, __VA_ARGS__)) MPPP_UNPACK_KV_SHARED MPPP_EXPAND((TYPE, n, __VA_ARGS__)) }
+
+#pragma region PACK_ARRAY
+#define MPPP_PACK_ARRAY(v, k) << (v).k
+#define MPPP_PACK_ARRAY_1(v, k0) MPPP_PACK_ARRAY(v, k0)
+#define MPPP_PACK_ARRAY_2(v, k0, k1) MPPP_PACK_ARRAY_1(v, k0) MPPP_PACK_ARRAY(v, k1)
+#define MPPP_PACK_ARRAY_3(v, k0, k1, k2) MPPP_PACK_ARRAY_2(v, k0, k1) MPPP_PACK_ARRAY(v, k2)
+#define MPPP_PACK_ARRAY_4(v, k0, k1, k2, k3) MPPP_PACK_ARRAY_3(v, k0, k1, k2) MPPP_PACK_ARRAY(v, k3)
+#define MPPP_PACK_ARRAY_5(v, k0, k1, k2, k3, k4) MPPP_PACK_ARRAY_4(v, k0, k1, k2, k3) MPPP_PACK_ARRAY(v, k4)
+#define MPPP_PACK_ARRAY_N(n, v, ...) p.pack_array(n); p MPPP_CAT(MPPP_PACK_ARRAY_, n)MPPP_EXPAND((v, __VA_ARGS__))
+#define MPPP_PACK_ARRAY_TYPE(TYPE, n, ...) inline void serialize(packer &p, const TYPE &value){ MPPP_PACK_ARRAY_N MPPP_EXPAND((n, value, __VA_ARGS__)); }
+#define MPPP_PACK_ARRAY_SHARED(TYPE, n, ...) inline void serialize(packer &p, const std::shared_ptr<TYPE> &value){ MPPP_PACK_ARRAY_N MPPP_EXPAND((n, *value, __VA_ARGS__)); }
+#pragma endregion
+
+#pragma region UNPACK_ARRAY
+#define MPPP_UNPACK_ARRAY(v, k) uu >> (v).k; uu=uu.next();
+#define MPPP_UNPACK_ARRAY_1(v, k0) MPPP_UNPACK_ARRAY(v, k0)
+#define MPPP_UNPACK_ARRAY_2(v, k0, k1) MPPP_UNPACK_ARRAY_1(v, k0) MPPP_UNPACK_ARRAY(v, k1)
+#define MPPP_UNPACK_ARRAY_3(v, k0, k1, k2) MPPP_UNPACK_ARRAY_2(v, k0, k1) MPPP_UNPACK_ARRAY(v, k2)
+#define MPPP_UNPACK_ARRAY_4(v, k0, k1, k2, k3) MPPP_UNPACK_ARRAY_3(v, k0, k1, k2) MPPP_UNPACK_ARRAY(v, k3)
+#define MPPP_UNPACK_ARRAY_5(v, k0, k1, k2, k3, k4) MPPP_UNPACK_ARRAY_4(v, k0, k1, k2, k3) MPPP_UNPACK_ARRAY(v, k4)
+#define MPPP_UNPACK_ARRAY_N(n, v, ...) auto uu = u[0]; MPPP_CAT(MPPP_UNPACK_ARRAY_, n)MPPP_EXPAND((v, __VA_ARGS__)) return uu;
+#define MPPP_UNPACK_ARRAY_TYPE(TYPE, n, ...) inline parser deserialize(const parser &u, TYPE &value){ MPPP_UNPACK_ARRAY_N MPPP_EXPAND((n, value, __VA_ARGS__)); }
+#define MPPP_UNPACK_ARRAY_SHARED(TYPE, n, ...) inline parser deserialize(const parser &u, std::shared_ptr<TYPE> &value){ if(!value){ value=std::make_shared<TYPE>(); } MPPP_UNPACK_ARRAY_N MPPP_EXPAND((n, *value, __VA_ARGS__)); }
+
+#pragma endregion
+
+#define MPPP_ARRAY_SERIALIZER(TYPE, n, ...) namespace msgpackpp { MPPP_PACK_ARRAY_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) MPPP_UNPACK_ARRAY_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) }
 
 #pragma warning(pop)

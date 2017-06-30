@@ -29,46 +29,7 @@ struct Person
 		return name == rhs.name && age == rhs.age;
 	}
 };
-namespace msgpackpp
-{
-	// Person p;
-	// msgpackpp::packer packer;
-	// packer << p;
-	void serialize(packer &packer, const Person &p)
-	{
-		packer.pack_map(2)
-			<< "name" << p.name
-			<< "age" << p.age
-			;
-	}
-
-	//  auto parser=msgpackpp::parser(msgpack_bytes);
-	//  Person p;
-	//  parser >> p;
-	parser deserialize(const parser &u, Person &p)
-	{
-		auto uu = u[0];
-		auto count = u.count();
-		for (int i = 0; i<count; ++i)
-		{
-			auto key = uu.get_string();
-			uu = uu.next();
-
-			if (key == "name") {
-				uu >> p.name;
-			}
-			else if (key == "age") {
-				uu >> p.age;
-			}
-			else {
-				// unknown key
-				assert(false);
-			}
-			uu = uu.next();
-		}
-		return uu;
-	}
-}
+MPPP_MAP_SERIALIZER(Person, 2, name, age)
 
 
 struct Point
@@ -81,37 +42,7 @@ struct Point
 		return x == rhs.x && y == rhs.y;
 	}
 };
-namespace msgpackpp
-{
-	// Point p;
-	// msgpackpp::packer packer;
-	// packer << p;
-	void serialize(packer &packer, const Point &p)
-	{
-		packer.pack_array(2)
-			<< p.x
-			<< p.y
-			;
-	}
-
-	//  auto parser=msgpackpp::parser(msgpack_bytes);
-	//  Point p;
-	//  parser >> p;
-	parser deserialize(const parser &u, Point &p)
-	{
-		assert(u.count() == 2);
-
-		auto uu = u[0];
-
-		uu >> p.x;
-		uu = uu.next();
-
-		uu >> p.y;
-		uu = uu.next();
-
-		return uu;
-	}
-}
+MPPP_ARRAY_SERIALIZER(Point, 2, x, y);
 
 
 TEST_CASE("serialize")
