@@ -1238,6 +1238,9 @@ namespace msgpackpp {
 		}
 
 	public:
+		parser()
+		{}
+
 		parser(const std::vector<std::uint8_t> &v)
 			: m_p(v.data())
 		{		
@@ -2167,6 +2170,12 @@ namespace msgpackpp {
 		return u.get_number(value);
 	}
 
+	inline parser deserialize(const parser &u, parser &x)
+	{
+		x = u[0];
+		return u[0].next();
+	}
+
 #pragma region deserialize tuple
 	inline parser _deserialize(std::tuple<> &value, const parser &u)
 	{
@@ -2206,7 +2215,11 @@ namespace msgpackpp {
 		assert(u.is_array());
 		if (u.count() != std::tuple_size<typename std::remove_reference<decltype(value)>::type>::value)
 		{
-			throw std::runtime_error("invalid arguments count");
+			std::stringstream ss;
+			ss << "invalid arguments count: " << u.count()
+				<< ", but expected: " << std::tuple_size<typename std::remove_reference<decltype(value)>::type>::value
+				;
+			throw std::runtime_error(ss.str());
 		}
 		return _deserialize(value, u[0]);
 	}
@@ -2316,6 +2329,7 @@ namespace msgpackpp {
 	}
 #pragma endregion
 
+#pragma region result
 	template<typename F, typename R, typename C, typename ...AS, std::size_t... IS>
 	procedurecall _make_procedurecall(const F &f
 		, R(C::*)(AS...)const
@@ -2348,6 +2362,7 @@ namespace msgpackpp {
 			, std::index_sequence_for<AS...>{}
 		);
 	}
+#pragma endregion
 
 	template<typename F>
 	procedurecall make_procedurecall(F f)
@@ -2357,6 +2372,15 @@ namespace msgpackpp {
 		);
 	}
 
+	template<typename C, typename ...AS>
+	procedurecall make_methodcall(C *c, void(C::* f)(AS...))
+	{
+		return make_procedurecall([c, f](AS... args) {
+			(*c.*f)(args ...);
+		});
+	}
+
+#pragma region call
 	template<typename F, typename R, typename C, typename ...AS>
 	decltype(auto) _procedure_call(F f, R(C::*)(AS...)const, AS... args)
 	{
@@ -2375,6 +2399,9 @@ namespace msgpackpp {
 	{
 		return _procedure_call(f, &decltype(f)::operator(), args...);
 	}
+#pragma endregion
+
+
 #pragma endregion
 } // namespace
 
