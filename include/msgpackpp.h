@@ -618,8 +618,8 @@ namespace msgpackpp {
 
 	class parser
 	{
-		const std::uint8_t *m_p;
-		int m_size;
+		const std::uint8_t *m_p=nullptr;
+		int m_size=-1;
 
 		template<typename T>
 		T body_number()const
@@ -1247,6 +1247,11 @@ namespace msgpackpp {
 			: m_p(p)
 		{
 			// ToDo
+		}
+
+		int consumed_size()const {
+			auto n = next();
+			return n.m_p - m_p;
 		}
 
 		std::string to_json()const
