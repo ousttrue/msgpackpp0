@@ -1480,7 +1480,7 @@ namespace msgpackpp {
 
 		parser advance(size_t n)const
 		{
-			return parser(m_p + n, m_size - n);
+			return parser(m_p + n, static_cast<int>(m_size - n));
 		}
 
 		template<typename T>
