@@ -2273,6 +2273,13 @@ namespace msgpackpp {
 		return uu;
 	}
 
+	template<>
+	inline parser deserialize<std::string_view>(const parser &u, std::string_view &value)
+	{
+		auto uu = u.get_string(value);
+		return uu;
+	}
+
     template<>
 	inline void serialize<std::string>(packer &p, const std::string &t)
 	{
