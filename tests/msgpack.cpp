@@ -544,7 +544,7 @@ TEST_CASE("array32")
 	msgpackpp::packer packer(payload);
 
 	packer.pack_array(count);
-	for (auto i = 0; i < count; ++i) {
+	for (unsigned int i = 0; i < count; ++i) {
 		packer << i;
 	}
 	auto p = packer.get_payload();
@@ -559,7 +559,7 @@ TEST_CASE("array32")
 	// array
 	REQUIRE(count == parsed.count());
 
-	for (auto i = 0; i < count; i+=1000) {
+	for (unsigned int i = 0; i < count; i+=1000) {
 		REQUIRE(i == parsed[i].get_number<int>());
 	}
 
