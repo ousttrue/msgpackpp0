@@ -619,6 +619,11 @@ namespace msgpackpp {
 	class parser
 	{
 		const std::uint8_t *m_p=nullptr;
+		inline std::uint8_t header()const 
+		{
+			if (m_size < 1)throw std::runtime_error("empty");
+			return m_p[0];
+		}
 		int m_size=-1;
 
 		template<typename T>
@@ -656,7 +661,7 @@ namespace msgpackpp {
 
 		int body_index()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 #pragma region POSITIVE_FIXNUM 0x00 - 0x7F
@@ -951,7 +956,7 @@ namespace msgpackpp {
 
 		int body_size()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 #pragma region POSITIVE_FIXNUM 0x00 - 0x7F
@@ -1356,7 +1361,7 @@ namespace msgpackpp {
 #pragma region leaf
 		parser get_bool(bool &value)const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			if (type == pack_type::True) value=true;
 			else if (type == pack_type::False) value=false;
 			else throw std::runtime_error("not bool");
@@ -1381,7 +1386,7 @@ namespace msgpackpp {
 	public:
 		parser get_string(std::string_view& value)const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::STR32: return get_string(value, 1+4, body_number<std::uint32_t>());
@@ -1433,7 +1438,7 @@ namespace msgpackpp {
 
 		parser get_binary_view(std::string_view &value)const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::BIN32:
@@ -1493,7 +1498,7 @@ namespace msgpackpp {
 		template<typename T>
 		parser get_number(T &value)const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			if (type <= 0x7f) {
 				// small int(0 - 127)
 				value=type;
@@ -1559,19 +1564,19 @@ namespace msgpackpp {
 
 		bool is_nil()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			return type == pack_type::NIL;
 		}
 
 		bool is_bool()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			return type == pack_type::True || type == pack_type::False;
 		}
 
 		bool is_number()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 #pragma region POSITIVE_FIXNUM 0x00 - 0x7F
@@ -1765,7 +1770,7 @@ namespace msgpackpp {
 
 		bool is_binary()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::BIN8:
@@ -1779,7 +1784,7 @@ namespace msgpackpp {
 
 		bool is_string()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::STR32: return true;
@@ -1827,7 +1832,7 @@ namespace msgpackpp {
 #pragma region array or map
 		bool is_array()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::FIX_ARRAY:
@@ -1856,7 +1861,7 @@ namespace msgpackpp {
 
 		bool is_map()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::FIX_MAP:
@@ -1885,7 +1890,7 @@ namespace msgpackpp {
 
 		int count()const
 		{
-			auto type = static_cast<pack_type>(m_p[0]);
+			auto type = static_cast<pack_type>(header());
 			switch (type)
 			{
 			case pack_type::FIX_ARRAY: return 0;
