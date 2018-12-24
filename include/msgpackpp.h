@@ -1253,7 +1253,7 @@ namespace msgpackpp {
 		{}
 
 		parser(const std::vector<std::uint8_t> &v)
-			: m_p(v.data()), m_size(v.size())
+			: m_p(v.data()), m_size(static_cast<int>(v.size()))
 		{
 			if (m_size < 0)throw std::runtime_error("no size");
 		}
