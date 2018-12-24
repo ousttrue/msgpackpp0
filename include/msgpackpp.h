@@ -626,10 +626,15 @@ namespace msgpackpp {
 		{
 			switch (sizeof(T))
 			{
-			case 1: return m_p[1];
-			case 2: return (m_p[1] << 8) | m_p[2];
+			case 1:
+				if (m_size < 1 + sizeof(T))throw std::runtime_error("over run");
+				return m_p[1];
+			case 2:
+				if (m_size < 1 + sizeof(T))throw std::runtime_error("over run");
+				return (m_p[1] << 8) | m_p[2];
 			case 4:
 			{
+				if (m_size < 1 + sizeof(T))throw std::runtime_error("over run");
 				std::uint8_t buf[] = {
 					m_p[4], m_p[3], m_p[2], m_p[1]
 				};
@@ -637,6 +642,7 @@ namespace msgpackpp {
 			}
 			case 8:
 			{
+				if (m_size < 1 + sizeof(T))throw std::runtime_error("over run");
 				std::uint8_t buf[] = {
 					m_p[8], m_p[7], m_p[6], m_p[5], m_p[4], m_p[3], m_p[2], m_p[1]
 				};
@@ -1242,14 +1248,15 @@ namespace msgpackpp {
 		{}
 
 		parser(const std::vector<std::uint8_t> &v)
-			: m_p(v.data())
-		{		
+			: m_p(v.data()), m_size(v.size())
+		{
+			if (m_size < 0)throw std::runtime_error("no size");
 		}
 
 		parser(const std::uint8_t *p, int size)
-			: m_p(p)
+			: m_p(p), m_size(size)
 		{
-			// ToDo
+			if (m_size < 0)throw std::runtime_error("no size");
 		}
 
 		int consumed_size()const {
