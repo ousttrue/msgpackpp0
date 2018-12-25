@@ -2503,4 +2503,42 @@ return uu;\
 
 #define MPPP_ARRAY_SERIALIZER(TYPE, n, ...) namespace msgpackpp { MPPP_PACK_ARRAY_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) MPPP_UNPACK_ARRAY_TYPE MPPP_EXPAND((TYPE, n, __VA_ARGS__)) }
 
+// RPC request
+namespace msgpackpp {
+	template<typename ...AS>
+	std::vector<std::uint8_t> make_rpc_request(int id, const std::string &method, AS... args)
+	{
+		packer packer;
+		packer.pack_array(4);
+		packer << 0; // request type
+		packer << id;
+		packer << method;
+		packer << std::make_tuple(args...);
+		return packer.get_payload();
+	}
+
+	template<typename A>
+	std::vector<std::uint8_t> make_rpc_response(int id, const std::string &error, A result)
+	{
+		packer packer;
+		packer.pack_array(4);
+		packer << 1; // response type
+		packer << id;
+		packer << error;
+		packer << result;
+		return packer.get_payload();
+	}
+
+	template<typename ...AS>
+	std::vector<std::uint8_t> make_rpc_notify(const std::string &method, AS... args)
+	{
+		packer packer;
+		packer.pack_array(3);
+		packer << 2; // notify type
+		packer << method;
+		packer << std::make_tuple(args...);
+		return packer.get_payload();
+	}
+}
+
 #pragma warning(pop)

@@ -241,3 +241,11 @@ R value;
 msgpackpp::parser(result) >> value; // value=3
 ```
 
+- https://github.com/msgpack-rpc/msgpack-rpc/blob/master/spec.md
+
+```cpp
+int id=1;
+auto p = msgpackpp::make_rpc_request(id, "method", 1, 2, 3);
+// [0, 1, "method", [1, 2, 3]]
+```
+
