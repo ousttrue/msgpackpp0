@@ -1,29 +1,17 @@
-cmake_minimum_required(VERSION 2.8)
-project(msgpackpp) # .sln
+cmake_minimum_required(VERSION 3.14)
+project(msgpackpp)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    # using GCC
-    set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -Wno-unknown-pragmas -Wno-switch")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    # using Visual Studio C++
-	#set(CMAKE_CXX_FLAGS "/std:c++latest /EHsc")
+set(CMAKE_CXX_STANDARD 17)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # using GCC
+  set(CMAKE_CXX_FLAGS "-Wall -Wno-unknown-pragmas -Wno-switch")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  # using Visual Studio C++ set(CMAKE_CXX_FLAGS "/std:c++latest /EHsc")
 endif()
 
-add_executable(tests 
-    include/msgpackpp.h
-    tests/msgpack.cpp
-    tests/serialize.cpp
-    tests/rpc.cpp
-    ) # .vcxproj
-include_directories(
-    include
-    tests
-    )
+add_library(msgpackpp INTERFACE)
+target_include_directories(msgpackpp
+                           INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
+target_compile_options(msgpackpp INTERFACE /wd4267)
 
-add_executable(sample 
-    include/msgpackpp.h
-    samples/sample.cpp
-    ) # .vcxproj
-include_directories(
-    include
-    )
+subdirs(samples catch tests)
