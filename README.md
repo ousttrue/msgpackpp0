@@ -1,9 +1,6 @@
 # msgpackpp
-msgpack parser &amp; packer
 
-- header only
-- c++17(std::string_view)
-- test vs2017 only
+`c++17` header only msgpack implementation.
 
 # msgpack spec
 - https://github.com/msgpack/msgpack/blob/master/spec.md
@@ -68,24 +65,24 @@ see [tests](tests/tests.cpp).
 
 # implemented types
 
-| c++ type                     | packer                    | parser            |
-| ---------------------------- |:-------------------------:|:-----------------:|
-| ``(void)``                   |``packer.pack_nil()``      |``(parser.is_nil())``|
-| ``bool``                     |``packer.pack_bool(b)``    |``parser.get_bool()``|
-| ``char``                     |``packer.pack_integer(n)`` |``parser.get_number<char>()``|
-| ``short``                    |``packer.pack_integer(n)`` |``parser.get_number<short>()``|
-| ``int``                      |``packer.pack_integer(n)`` |``parser.get_number<int>()``|
-| ``long long``                |``packer.pack_integer(n)`` |``parser.get_number<long long>()``|
-| ``unsigned char``            |``packer.pack_integer(n)`` |``parser.get_number<unsigned char>()``|
-| ``unsigned short``           |``packer.pack_integer(n)`` |``parser.get_number<unsigned short>()``|
-| ``unsigned int``             |``packer.pack_integer(n)`` |``parser.get_number<unsigned int>()``|
-| ``unsigned long long``       |``packer.pack_integer(n)`` |``parser.get_number<unsigned long long>()``|
-| ``float``                    |``packer.pack_float(n)``   |``parser.get_number<float>()``|
-| ``double``                   |``packer.pack_double(n)``  |``parser.get_number<double>()``|
-| ``const char *``             |``packer.pack_str(str)``   |             |
-| ``std::string``              |``packer.pack_str(str)``   |``parser.get_str()``|
-| ``std::vector<std::uint8_t>``|``packer.pack_bin(bin)``   |``parser.get_bin()``|
-| ``std::tuple<A...>``         |``packer << t``|`` parser >> t``|
+| c++ type                      | packer                     | parser                                      |
+|-------------------------------|----------------------------|---------------------------------------------|
+| ``(void)``                    | ``packer.pack_nil()``      | ``(parser.is_nil())``                       |
+| ``bool``                      | ``packer.pack_bool(b)``    | ``parser.get_bool()``                       |
+| ``char``                      | ``packer.pack_integer(n)`` | ``parser.get_number<char>()``               |
+| ``short``                     | ``packer.pack_integer(n)`` | ``parser.get_number<short>()``              |
+| ``int``                       | ``packer.pack_integer(n)`` | ``parser.get_number<int>()``                |
+| ``long long``                 | ``packer.pack_integer(n)`` | ``parser.get_number<long long>()``          |
+| ``unsigned char``             | ``packer.pack_integer(n)`` | ``parser.get_number<unsigned char>()``      |
+| ``unsigned short``            | ``packer.pack_integer(n)`` | ``parser.get_number<unsigned short>()``     |
+| ``unsigned int``              | ``packer.pack_integer(n)`` | ``parser.get_number<unsigned int>()``       |
+| ``unsigned long long``        | ``packer.pack_integer(n)`` | ``parser.get_number<unsigned long long>()`` |
+| ``float``                     | ``packer.pack_float(n)``   | ``parser.get_number<float>()``              |
+| ``double``                    | ``packer.pack_double(n)``  | ``parser.get_number<double>()``             |
+| ``const char *``              | ``packer.pack_str(str)``   |                                             |
+| ``std::string``               | ``packer.pack_str(str)``   | ``parser.get_str()``                        |
+| ``std::vector<std::uint8_t>`` | ``packer.pack_bin(bin)``   | ``parser.get_bin()``                        |
+| ``std::tuple<A...>``          | ``packer << t``            | `` parser >> t``                            |
 
 # usertype serializer & deserializer definition
 
@@ -248,4 +245,3 @@ int id=1;
 auto p = msgpackpp::make_rpc_request(id, "method", 1, 2, 3);
 // [0, 1, "method", [1, 2, 3]]
 ```
-

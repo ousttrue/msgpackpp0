@@ -3,4 +3,8 @@
     "cmake.configureArgs": [
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=1",
     ],
+    "cSpell.words": [
+        "msgpack",
+        "msgpackpp"
+    ],
 }

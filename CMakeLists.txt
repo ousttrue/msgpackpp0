@@ -4,9 +4,10 @@ project(msgpackpp)
 set(CMAKE_CXX_STANDARD 17)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   # using GCC
-  set(CMAKE_CXX_FLAGS "-Wall -Wno-unknown-pragmas -Wno-switch")
+  add_compile_options(-Wall -Wno-unknown-pragmas -Wno-switch)
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  # using Visual Studio C++ set(CMAKE_CXX_FLAGS "/std:c++latest /EHsc")
+  # using Visual Studio C++
+  add_compile_options(/source-charset:utf-8)
 endif()
 
 add_library(msgpackpp INTERFACE)
