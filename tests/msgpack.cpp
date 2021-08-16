@@ -682,16 +682,75 @@ TEST_CASE("fixext1") {
 /// +--------+--------+--------+--------+
 /// |  0xd5  |  type  |       data      |
 /// +--------+--------+--------+--------+
+TEST_CASE("fixext2") {
+  // packing
+  auto value = {(char)0x23, (char)0x34};
+  auto p = msgpackpp::packer().pack_ext(0x12, value).get_payload();
+
+  // check
+  REQUIRE(4 == p.size());
+  REQUIRE(0xd5 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+  REQUIRE(view[0] == 0x23);
+  REQUIRE(view[1] == 0x34);
+}
 
 /// fixext 4 stores an integer and a byte array whose length is 4 bytes
 /// +--------+--------+--------+--------+--------+--------+
 /// |  0xd6  |  type  |                data               |
 /// +--------+--------+--------+--------+--------+--------+
+TEST_CASE("fixext4") {
+  // packing
+  char value[] = {0x23, 0x34, 0x56, 0x78};
+  auto p = msgpackpp::packer().pack_ext(0x12, value).get_payload();
+
+  // check
+  REQUIRE(6 == p.size());
+  REQUIRE(0xd6 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+  REQUIRE(view[0] == 0x23);
+  REQUIRE(view[1] == 0x34);
+  REQUIRE(view[2] == 0x56);
+  REQUIRE(view[3] == 0x78);
+}
 
 /// fixext 8 stores an integer and a byte array whose length is 8 bytes
 /// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
 /// |  0xd7  |  type  |                                  data |
 /// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+TEST_CASE("fixext8") {
+  // packing
+  char value[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+  auto p = msgpackpp::packer().pack_ext(0x12, value).get_payload();
+
+  // check
+  REQUIRE(10 == p.size());
+  REQUIRE(0xd7 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+  REQUIRE(view[0] == 0x01);
+  REQUIRE(view[1] == 0x02);
+  REQUIRE(view[2] == 0x03);
+  REQUIRE(view[3] == 0x04);
+  REQUIRE(view[4] == 0x05);
+  REQUIRE(view[5] == 0x06);
+  REQUIRE(view[6] == 0x07);
+  REQUIRE(view[7] == 0x08);
+}
 
 /// fixext 16 stores an integer and a byte array whose length is 16 bytes
 /// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
@@ -700,20 +759,121 @@ TEST_CASE("fixext1") {
 /// +--------+--------+--------+--------+--------+--------+--------+--------+
 ///                               data (cont.)                              |
 /// +--------+--------+--------+--------+--------+--------+--------+--------+
+TEST_CASE("fixext16") {
+  // packing
+  char value[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                  0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+  auto p = msgpackpp::packer().pack_ext(0x12, value).get_payload();
+
+  // check
+  REQUIRE(18 == p.size());
+  REQUIRE(0xd8 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+  REQUIRE(view[0] == 0x01);
+  REQUIRE(view[1] == 0x02);
+  REQUIRE(view[2] == 0x03);
+  REQUIRE(view[3] == 0x04);
+  REQUIRE(view[4] == 0x05);
+  REQUIRE(view[5] == 0x06);
+  REQUIRE(view[6] == 0x07);
+  REQUIRE(view[7] == 0x08);
+  REQUIRE(view[8] == 0x09);
+  REQUIRE(view[9] == 0x0a);
+  REQUIRE(view[10] == 0x0b);
+  REQUIRE(view[11] == 0x0c);
+  REQUIRE(view[12] == 0x0d);
+  REQUIRE(view[13] == 0x0e);
+  REQUIRE(view[14] == 0x0f);
+  REQUIRE(view[15] == 0x10);
+}
 
 /// ext 8 stores an integer and a byte array whose length is upto (2^8)-1 bytes:
 /// +--------+--------+--------+========+
 /// |  0xc7  |XXXXXXXX|  type  |  data  |
 /// +--------+--------+--------+========+
+TEST_CASE("ext8") {
+  std::vector<unsigned char> buf;
+  for (int i = 0; i < 20; ++i) {
+    buf.push_back(i);
+  }
+
+  // packing
+  auto p = msgpackpp::packer().pack_ext(0x12, buf).get_payload();
+
+  // check
+  REQUIRE(1 + 1 + 1 + buf.size() == p.size());
+  REQUIRE(0xc7 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+
+  for (int i = 0; i < buf.size(); ++i) {
+    REQUIRE(i == view[i]);
+  }
+}
 
 /// ext 16 stores an integer and a byte array whose length is upto (2^16)-1
 /// bytes:
 /// +--------+--------+--------+--------+========+
 /// |  0xc8  |YYYYYYYY|YYYYYYYY|  type  |  data  |
 /// +--------+--------+--------+--------+========+
+TEST_CASE("ext16") {
+  std::vector<unsigned char> buf;
+  for (int i = 0; i < 300; ++i) {
+    buf.push_back(i % 128);
+  }
+
+  // packing
+  auto p = msgpackpp::packer().pack_ext(0x12, buf).get_payload();
+
+  // check
+  REQUIRE(1 + 2 + 1 + buf.size() == p.size());
+  REQUIRE(0xc8 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+
+  for (int i = 0; i < buf.size(); ++i) {
+    REQUIRE(i % 128 == view[i]);
+  }
+}
 
 /// ext 32 stores an integer and a byte array whose length is upto (2^32)-1
 /// bytes:
 /// +--------+--------+--------+--------+--------+--------+========+
 /// |  0xc9  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|  type  |  data  |
 /// +--------+--------+--------+--------+--------+--------+========+
+TEST_CASE("ext32") {
+  std::vector<unsigned char> buf;
+  for (int i = 0; i < 0xFFFF + 5; ++i) {
+    buf.push_back(i % 128);
+  }
+
+  // packing
+  auto p = msgpackpp::packer().pack_ext(0x12, buf).get_payload();
+
+  // check
+  REQUIRE(1 + 4 + 1 + buf.size() == p.size());
+  REQUIRE(0xc9 == p[0]);
+
+  // unpack
+  auto parsed = msgpackpp::parser(p.data(), p.size());
+
+  auto [type, view] = parsed.get_ext();
+  REQUIRE(type == 0x12);
+
+  for (int i = 0; i < buf.size(); ++i) {
+    REQUIRE(i % 128 == view[i]);
+  }
+}

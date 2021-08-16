@@ -525,6 +525,8 @@ public:
 
   template <class Range> packer &pack_ext(char type, const Range &r) {
     auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
+
+    // FIXEXT
     switch (size) {
     case 1:
       m_buffer->push_back(pack_type::FIX_EXT_1);
@@ -532,9 +534,52 @@ public:
       push(r);
       break;
 
+    case 2:
+      m_buffer->push_back(pack_type::FIX_EXT_2);
+      m_buffer->push_back(type);
+      push(r);
+      break;
+
+    case 4:
+      m_buffer->push_back(pack_type::FIX_EXT_4);
+      m_buffer->push_back(type);
+      push(r);
+      break;
+
+    case 8:
+      m_buffer->push_back(pack_type::FIX_EXT_8);
+      m_buffer->push_back(type);
+      push(r);
+      break;
+
+    case 16:
+      m_buffer->push_back(pack_type::FIX_EXT_16);
+      m_buffer->push_back(type);
+      push(r);
+      break;
+
     default:
-      throw std::runtime_error("pack_map: not implemented");
+      // EXT
+      if (size <= std::numeric_limits<std::uint8_t>::max()) {
+        m_buffer->push_back(pack_type::EXT8);
+        m_buffer->push_back(static_cast<std::uint8_t>(size));
+        m_buffer->push_back(type);
+        push(r);
+      } else if (size <= std::numeric_limits<std::uint16_t>::max()) {
+        m_buffer->push_back(pack_type::EXT16);
+        push_number_reverse(static_cast<std::uint16_t>(size));
+        m_buffer->push_back(type);
+        push(r);
+      } else if (size <= std::numeric_limits<std::uint32_t>::max()) {
+        m_buffer->push_back(pack_type::EXT32);
+        push_number_reverse(static_cast<std::uint32_t>(size));
+        m_buffer->push_back(type);
+        push(r);
+      } else {
+        throw std::runtime_error("pack_ext: not implemented");
+      }
     }
+
     return *this;
   }
 
@@ -1902,9 +1947,57 @@ public:
       return advance(1 + 1 + n);
     }
 
+    case pack_type::EXT32: {
+      auto begin = m_p + 2 + 4;
+      auto n = body_number<std::uint32_t>();
+      value = std::string_view((char *)begin, n);
+      return advance(2 + 4 + n);
+    }
+
+    case pack_type::EXT16: {
+      auto begin = m_p + 2 + 2;
+      auto n = body_number<std::uint16_t>();
+      value = std::string_view((char *)begin, n);
+      return advance(2 + 2 + n);
+    }
+    case pack_type::EXT8: {
+      auto begin = m_p + 2 + 1;
+      auto n = body_number<std::uint8_t>();
+      value = std::string_view((char *)begin, n);
+      return advance(2 + 1 + n);
+    }
+
     case pack_type::FIX_EXT_1: {
       auto begin = m_p + 1 + 1;
       auto n = 1;
+      value = std::string_view((char *)begin, n);
+      return advance(1 + 1 + n);
+    }
+
+    case pack_type::FIX_EXT_2: {
+      auto begin = m_p + 1 + 1;
+      auto n = 2;
+      value = std::string_view((char *)begin, n);
+      return advance(1 + 1 + n);
+    }
+
+    case pack_type::FIX_EXT_4: {
+      auto begin = m_p + 1 + 1;
+      auto n = 4;
+      value = std::string_view((char *)begin, n);
+      return advance(1 + 1 + n);
+    }
+
+    case pack_type::FIX_EXT_8: {
+      auto begin = m_p + 1 + 1;
+      auto n = 8;
+      value = std::string_view((char *)begin, n);
+      return advance(1 + 1 + n);
+    }
+
+    case pack_type::FIX_EXT_16: {
+      auto begin = m_p + 1 + 1;
+      auto n = 16;
       value = std::string_view((char *)begin, n);
       return advance(1 + 1 + n);
     }
@@ -1934,7 +2027,29 @@ public:
 
   std::tuple<char, std::string_view> get_ext() const {
     std::string_view bytes;
-    auto type = m_p[1];
+    char type;
+    switch (header()) {
+    case FIX_EXT_1:
+    case FIX_EXT_2:
+    case FIX_EXT_4:
+    case FIX_EXT_8:
+    case FIX_EXT_16:
+      type = m_p[1];
+      break;
+    case EXT8:
+      type = m_p[1+1];
+      break;
+    case EXT16:
+      type = m_p[1+2];
+      break;
+    case EXT32:
+      type = m_p[1+4];
+      break;
+
+    default:
+      throw std::runtime_error("not ext");
+    }
+
     get_binary_view(bytes);
     return std::make_tuple(type, bytes);
   }

@@ -2,6 +2,10 @@
 
 `c++17` header only msgpack implementation.
 
+# TODO
+
+* [ ] use `std::span`. (using std::string_view)
+
 # msgpack spec
 - https://github.com/msgpack/msgpack/blob/master/spec.md
 
