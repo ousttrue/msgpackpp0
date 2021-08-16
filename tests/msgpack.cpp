@@ -1,7 +1,10 @@
+///
+/// https://github.com/msgpack/msgpack/blob/master/spec.md
+///
 #include <msgpackpp.h>
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch.hpp>
-
+#include <array>
 
 /// nil:
 /// +--------+
@@ -670,3 +673,63 @@ TEST_CASE("map32")
 	REQUIRE(40000 == parsed["key40001"].get_number<int>());
 	REQUIRE(0xFFFF == parsed["key65536"].get_number<int>());
 }
+
+/// fixext 1 stores an integer and a byte array whose length is 1 byte
+/// +--------+--------+--------+
+/// |  0xd4  |  type  |  data  |
+/// +--------+--------+--------+
+TEST_CASE("fixext1")
+{
+	// packing
+	std::array<char, 1> value = {0x23};
+	auto p = msgpackpp::packer().pack_ext(0x12, value).get_payload();
+
+	// check
+	REQUIRE(3 == p.size());
+	REQUIRE(0xd4 == p[0]);
+
+	// unpack
+	auto parsed = msgpackpp::parser(p.data(), p.size());
+
+	auto [type, view] = parsed.get_ext();
+	REQUIRE(type == 0x12);
+	REQUIRE(view[0] == 0x23);
+}
+
+/// fixext 2 stores an integer and a byte array whose length is 2 bytes
+/// +--------+--------+--------+--------+
+/// |  0xd5  |  type  |       data      |
+/// +--------+--------+--------+--------+
+
+/// fixext 4 stores an integer and a byte array whose length is 4 bytes
+/// +--------+--------+--------+--------+--------+--------+
+/// |  0xd6  |  type  |                data               |
+/// +--------+--------+--------+--------+--------+--------+
+
+/// fixext 8 stores an integer and a byte array whose length is 8 bytes
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// |  0xd7  |  type  |                                  data                                 |
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+
+/// fixext 16 stores an integer and a byte array whose length is 16 bytes
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// |  0xd8  |  type  |                                  data                                  
+/// +--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+/// +--------+--------+--------+--------+--------+--------+--------+--------+
+///                               data (cont.)                              |
+/// +--------+--------+--------+--------+--------+--------+--------+--------+
+
+/// ext 8 stores an integer and a byte array whose length is upto (2^8)-1 bytes:
+/// +--------+--------+--------+========+
+/// |  0xc7  |XXXXXXXX|  type  |  data  |
+/// +--------+--------+--------+========+
+
+/// ext 16 stores an integer and a byte array whose length is upto (2^16)-1 bytes:
+/// +--------+--------+--------+--------+========+
+/// |  0xc8  |YYYYYYYY|YYYYYYYY|  type  |  data  |
+/// +--------+--------+--------+--------+========+
+
+/// ext 32 stores an integer and a byte array whose length is upto (2^32)-1 bytes:
+/// +--------+--------+--------+--------+--------+--------+========+
+/// |  0xc9  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|  type  |  data  |
+/// +--------+--------+--------+--------+--------+--------+========+

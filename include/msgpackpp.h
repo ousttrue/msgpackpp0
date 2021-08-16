@@ -613,6 +613,24 @@ namespace msgpackpp {
 			return *this;
 		}
 
+		template <class Range>
+		packer& pack_ext(char type, const Range &r)
+		{
+			auto size = static_cast<size_t>(std::distance(std::begin(r), std::end(r)));
+			switch(size)
+			{
+			case 1:
+				m_buffer->push_back(pack_type::FIX_EXT_1);
+				m_buffer->push_back(type);
+				push(r);
+				break;
+
+			default:
+				throw std::runtime_error("pack_map: not implemented");
+			}	
+			return *this;
+		}
+
 		const buffer &get_payload()const { return *m_buffer; }
 	};
 
@@ -1463,6 +1481,14 @@ namespace msgpackpp {
 				value = std::string_view((char*)begin, n);
 				return advance(1 + 1 + n);
 			}
+
+			case pack_type::FIX_EXT_1:
+			{
+				auto begin = m_p + 1 + 1;
+				auto n = 1;
+				value = std::string_view((char*)begin, n);
+				return advance(1 + 1 + n);
+			}
 			}
 
 			throw std::runtime_error("not binary");
@@ -1488,6 +1514,14 @@ namespace msgpackpp {
 			auto view = get_binary_view();
 			std::vector<std::uint8_t> bytes(view.begin(), view.end());
 			return bytes;
+		}
+
+		std::tuple<char, std::string_view> get_ext()const
+		{
+			std::string_view bytes;
+			auto type = m_p[1];
+			get_binary_view(bytes);
+			return std::make_tuple(type, bytes);
 		}
 
 		parser advance(size_t n)const
