@@ -13,7 +13,7 @@
 - https://github.com/philsquared/Catch
 
 # usage
-samples/sample.cpp
+[samples/basic/basic.cpp](./samples/basic/basic.cpp)
 
 ```c++
 #include <msgpackpp.h>
