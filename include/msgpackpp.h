@@ -1734,6 +1734,8 @@ public:
       throw std::runtime_error("no size");
   }
 
+  const uint8_t *data() const { return m_p; }
+
   int consumed_size() const {
     auto n = next();
     return n.m_p - m_p;
@@ -2037,13 +2039,13 @@ public:
       type = m_p[1];
       break;
     case EXT8:
-      type = m_p[1+1];
+      type = m_p[1 + 1];
       break;
     case EXT16:
-      type = m_p[1+2];
+      type = m_p[1 + 2];
       break;
     case EXT32:
-      type = m_p[1+4];
+      type = m_p[1 + 4];
       break;
 
     default:
@@ -3182,6 +3184,18 @@ std::vector<std::uint8_t> make_rpc_response(int id, const std::string &error,
   packer << id;
   packer << error;
   packer << result;
+  return packer.get_payload();
+}
+
+std::vector<std::uint8_t> make_rpc_response_packed(int id,
+                                                   const std::string &error,
+                                                   const bytes &result) {
+  packer packer;
+  packer.pack_array(4);
+  packer << 1; // response type
+  packer << id;
+  packer << error;
+  packer.push(result);
   return packer.get_payload();
 }
 
