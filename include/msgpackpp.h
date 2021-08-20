@@ -1741,6 +1741,11 @@ public:
     return n.m_p - m_p;
   }
 
+  std::vector<uint8_t> copy_bytes() const {
+    auto p = data();
+    return std::vector<uint8_t>(p, p + consumed_size());
+  }
+
   std::string to_json() const {
     std::stringstream ss;
     to_json(ss);
