@@ -3035,8 +3035,8 @@ procedurecall make_procedurecall(R (*f)(AS...)) {
   return _make_procedurecall(f, std::index_sequence_for<AS...>{});
 }
 
-template <typename C, typename... AS>
-procedurecall make_methodcall(C *c, void (C::*f)(AS...)) {
+template <typename C, typename R, typename... AS>
+procedurecall make_methodcall(C *c, R (C::*f)(AS...)) {
   return make_procedurecall([c, f](AS... args) { (*c.*f)(args...); });
 }
 

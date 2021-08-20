@@ -13,17 +13,20 @@ template <typename R, typename... AS> void a(R (*f)(AS...)) {
 }
 
 struct Some {
-  int Do() { return 0; }
+  void Go() { ; }
+  int To() { return 0; }
   static void St() {}
 };
 
 auto l = []() {};
-auto b = std::bind(&Some::Do, Some{});
 
 TEST_CASE("make_procedure") {
   msgpackpp::make_procedurecall(l);
   msgpackpp::make_procedurecall(v);
   // msgpackpp::make_procedurecall(b);
+  Some s;
+  msgpackpp::make_methodcall(&s, &Some::Go);
+  msgpackpp::make_methodcall(&s, &Some::To);
   msgpackpp::make_procedurecall(&Some::St);
 }
 
