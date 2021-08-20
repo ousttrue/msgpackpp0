@@ -3195,7 +3195,7 @@ std::vector<std::uint8_t> make_rpc_response(int id, const std::string &error,
   return packer.get_payload();
 }
 
-std::vector<std::uint8_t> make_rpc_response_packed(int id,
+inline std::vector<std::uint8_t> make_rpc_response_packed(int id,
                                                    const std::string &error,
                                                    const bytes &result) {
   packer packer;
