@@ -1,5 +1,31 @@
 #include <catch.hpp>
+#include <iostream>
 #include <msgpackpp.h>
+
+static void v() {}
+static void v1(int a) {}
+static float f() {}
+static float f1(int a) {}
+
+template <typename F> void a(const F &f) { std::cout << "a" << std::endl; }
+template <typename R, typename... AS> void a(R (*f)(AS...)) {
+  std::cout << "b" << std::endl;
+}
+
+struct Some {
+  int Do() { return 0; }
+  static void St() {}
+};
+
+auto l = []() {};
+auto b = std::bind(&Some::Do, Some{});
+
+TEST_CASE("make_procedure") {
+  msgpackpp::make_procedurecall(l);
+  msgpackpp::make_procedurecall(v);
+  // msgpackpp::make_procedurecall(b);
+  msgpackpp::make_procedurecall(&Some::St);
+}
 
 TEST_CASE("procedure_call") {
   // 0 args

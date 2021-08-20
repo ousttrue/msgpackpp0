@@ -2962,6 +2962,25 @@ procedurecall _make_procedurecall(F f, void (C::*)(AS...) const) {
   return _make_procedurecall(f, &decltype(f)::operator(),
                              std::index_sequence_for<AS...>{});
 }
+
+template <typename... AS, std::size_t... IS>
+procedurecall _make_procedurecall(void (*f)(AS...),
+                                  std::index_sequence<IS...>) {
+  return [f](const parser &parser) -> bytes {
+    // unpack args
+    std::tuple<AS...> args;
+    parser >> args;
+
+    // call
+    f(std::move(std::get<IS>(args))...);
+
+    // pack result
+    msgpackpp::packer packer;
+    packer.pack_nil();
+    return packer.get_payload();
+  };
+}
+
 #pragma endregion
 
 #pragma region result
@@ -2988,10 +3007,32 @@ procedurecall _make_procedurecall(F f, R (C::*)(AS...) const) {
   return _make_procedurecall(f, &decltype(f)::operator(),
                              std::index_sequence_for<AS...>{});
 }
+
+template <typename R, typename... AS, std::size_t... IS>
+procedurecall _make_procedurecall(R (*f)(AS...), std::index_sequence<IS...>) {
+  return [f](const parser &parser) -> bytes {
+    // unpack args
+    std::tuple<AS...> args;
+    parser >> args;
+
+    // call
+    auto r = f(std::move(std::get<IS>(args))...);
+
+    // pack result
+    msgpackpp::packer packer;
+    packer << r;
+    return packer.get_payload();
+  };
+}
 #pragma endregion
 
 template <typename F> procedurecall make_procedurecall(F f) {
   return _make_procedurecall(f, &decltype(f)::operator());
+}
+
+template <typename R, typename... AS>
+procedurecall make_procedurecall(R (*f)(AS...)) {
+  return _make_procedurecall(f, std::index_sequence_for<AS...>{});
 }
 
 template <typename C, typename... AS>
@@ -3195,9 +3236,9 @@ std::vector<std::uint8_t> make_rpc_response(int id, const std::string &error,
   return packer.get_payload();
 }
 
-inline std::vector<std::uint8_t> make_rpc_response_packed(int id,
-                                                   const std::string &error,
-                                                   const bytes &result) {
+inline std::vector<std::uint8_t>
+make_rpc_response_packed(int id, const std::string &error,
+                         const bytes &result) {
   packer packer;
   packer.pack_array(4);
   packer << 1; // response type

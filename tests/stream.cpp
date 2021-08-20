@@ -22,7 +22,7 @@ TEST_CASE("stream")
     {
         auto last = parsed.next();
     }
-    catch (const std::runtime_error &e)
+    catch (const std::runtime_error &)
     {
         // throw if incomplete message
         auto a = 0;
