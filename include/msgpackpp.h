@@ -2919,6 +2919,12 @@ inline parser deserialize<std::string_view>(const parser &u,
   return uu;
 }
 
+template <typename T> inline T deserialize(const std::vector<uint8_t> &b) {
+  T value;
+  parser(b) >> value;
+  return value;
+}
+
 template <>
 inline void serialize<std::string>(packer &p, const std::string &t) {
   p.pack_str(t);
