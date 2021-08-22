@@ -62,6 +62,46 @@ inline bool operator==(const string &lhs, const string_view &rhs) {
 
 namespace msgpackpp {
 
+struct pack_error : public std::runtime_error {
+  pack_error(const char *msg) : runtime_error(msg) {}
+};
+
+struct underflow_pack_error : public pack_error {
+  underflow_pack_error() : pack_error("underflow") {}
+};
+
+struct overflow_pack_error : public pack_error {
+  overflow_pack_error() : pack_error("overflow") {}
+};
+
+struct parse_error : public std::runtime_error {
+  parse_error(const char *msg) : runtime_error(msg) {}
+};
+
+struct empty_parse_error : public parse_error {
+  empty_parse_error() : parse_error("empty") {}
+};
+
+struct lack_parse_error : public parse_error {
+  lack_parse_error() : parse_error("lack") {}
+};
+
+struct invalid_parse_error : public parse_error {
+  invalid_parse_error() : parse_error("invalid") {}
+};
+
+struct not_implemented_parse_error : public parse_error {
+  not_implemented_parse_error() : parse_error("not implemented") {}
+};
+
+struct no_size_parse_error : public parse_error {
+  no_size_parse_error() : parse_error("no size") {}
+};
+
+struct type_parse_error : public parse_error {
+  type_parse_error() : parse_error("type") {}
+};
+
 enum pack_type : std::uint8_t {
 #pragma region POSITIVE_FIXNUM 0x00 - 0x7F
   POSITIVE_FIXNUM = 0x00,
@@ -400,7 +440,7 @@ public:
         // network byteorder
         push_number_reverse(static_cast<std::int64_t>(n));
       } else {
-        throw std::runtime_error("pack_integer: not implemented");
+        throw underflow_pack_error();
       }
     } else {
       if (n <= 0x7F) {
@@ -421,7 +461,7 @@ public:
         // network byteorder
         push_number_reverse(static_cast<std::uint64_t>(n));
       } else {
-        throw std::runtime_error("pack_integer: not implemented");
+        throw overflow_pack_error();
       }
     }
     return *this;
@@ -468,7 +508,7 @@ public:
       push_number_reverse(static_cast<std::uint32_t>(size));
       push(r);
     } else {
-      throw std::runtime_error("pack_str: not implemented");
+      throw overflow_pack_error();
     }
     return *this;
   }
@@ -488,7 +528,7 @@ public:
       push_number_reverse(static_cast<std::uint32_t>(size));
       push(r);
     } else {
-      throw std::runtime_error("pack_bin: not implemented");
+      throw overflow_pack_error();
     }
     return *this;
   }
@@ -503,7 +543,7 @@ public:
       m_buffer->push_back(pack_type::ARRAY32);
       push_number_reverse(static_cast<std::uint32_t>(n));
     } else {
-      throw std::runtime_error("pack_array: not implemented");
+      throw overflow_pack_error();
     }
     return *this;
   }
@@ -518,7 +558,7 @@ public:
       m_buffer->push_back(pack_type::MAP32);
       push_number_reverse(static_cast<std::uint32_t>(n));
     } else {
-      throw std::runtime_error("pack_map: not implemented");
+      throw overflow_pack_error();
     }
     return *this;
   }
@@ -576,7 +616,7 @@ public:
         m_buffer->push_back(type);
         push(r);
       } else {
-        throw std::runtime_error("pack_ext: not implemented");
+        throw overflow_pack_error();
       }
     }
 
@@ -590,7 +630,7 @@ class parser {
   const std::uint8_t *m_p = nullptr;
   inline std::uint8_t header() const {
     if (m_size < 1)
-      throw std::runtime_error("empty");
+      throw empty_parse_error();
     return m_p[0];
   }
   int m_size = -1;
@@ -599,28 +639,28 @@ class parser {
     switch (sizeof(T)) {
     case 1:
       if (m_size < 1 + sizeof(T))
-        throw std::runtime_error("over run");
+        throw lack_parse_error();
       return m_p[1];
     case 2:
       if (m_size < 1 + sizeof(T))
-        throw std::runtime_error("over run");
+        throw lack_parse_error();
       return (m_p[1] << 8) | m_p[2];
     case 4: {
       if (m_size < 1 + sizeof(T))
-        throw std::runtime_error("over run");
+        throw lack_parse_error();
       std::uint8_t buf[] = {m_p[4], m_p[3], m_p[2], m_p[1]};
       return *reinterpret_cast<T *>(buf);
     }
     case 8: {
       if (m_size < 1 + sizeof(T))
-        throw std::runtime_error("over run");
+        throw lack_parse_error();
       std::uint8_t buf[] = {m_p[8], m_p[7], m_p[6], m_p[5],
                             m_p[4], m_p[3], m_p[2], m_p[1]};
       return *reinterpret_cast<T *>(buf);
     }
     }
 
-    throw std::runtime_error("body_number: not implemented");
+    throw invalid_parse_error();
     return T();
   }
 
@@ -1033,7 +1073,7 @@ class parser {
     case NIL:
       return 1;
     case NEVER_USED:
-      throw std::runtime_error("no size");
+      throw invalid_parse_error();
     case False:
       return 1;
     case True:
@@ -1047,11 +1087,11 @@ class parser {
       return 1 + 4;
 
     case EXT8:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case EXT16:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case EXT32:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
 
     case FLOAT:
       return 1;
@@ -1075,15 +1115,15 @@ class parser {
       return 1;
 
     case FIX_EXT_1:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_2:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_4:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_8:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_16:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
 
     case STR8:
       return 1 + 1;
@@ -1169,7 +1209,7 @@ class parser {
 #pragma endregion
     }
 
-    throw std::runtime_error("not implemented");
+    throw invalid_parse_error();
   }
 
   int body_size() const {
@@ -1443,72 +1483,72 @@ class parser {
 
 #pragma region FIX_MAP 0x80 - 0x8F
     case FIX_MAP:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x1:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x2:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x3:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x4:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x5:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x6:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x7:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x8:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0x9:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xA:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xB:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xC:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xD:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xE:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_MAP_0xF:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
 #pragma endregion
 
 #pragma region FIX_ARRAY 0x90 - 0x9F
     case FIX_ARRAY:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x1:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x2:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x3:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x4:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x5:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x6:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x7:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x8:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0x9:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xA:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xB:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xC:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xD:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xE:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
     case FIX_ARRAY_0xF:
-      throw std::runtime_error("no size");
+      throw no_size_parse_error();
 #pragma endregion
 
 #pragma region FIX_STR 0xA0 - 0xBF
@@ -1581,7 +1621,7 @@ class parser {
     case NIL:
       return 0;
     case NEVER_USED:
-      throw std::runtime_error("no size");
+      throw invalid_parse_error();
     case False:
       return 0;
     case True:
@@ -1595,11 +1635,11 @@ class parser {
       return body_number<std::uint32_t>();
 
     case EXT8:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case EXT16:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case EXT32:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
 
     case FLOAT:
       return 4;
@@ -1623,15 +1663,15 @@ class parser {
       return 8;
 
     case FIX_EXT_1:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_2:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_4:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_8:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
     case FIX_EXT_16:
-      throw std::runtime_error("not implemented");
+      throw not_implemented_parse_error();
 
     case STR8:
       return body_number<std::uint8_t>();
@@ -1641,13 +1681,13 @@ class parser {
       return body_number<std::uint32_t>();
 
     case ARRAY16:
-      throw std::runtime_error("no size");
+      throw not_implemented_parse_error();
     case ARRAY32:
-      throw std::runtime_error("no size");
+      throw not_implemented_parse_error();
     case MAP16:
-      throw std::runtime_error("no size");
+      throw not_implemented_parse_error();
     case MAP32:
-      throw std::runtime_error("no size");
+      throw not_implemented_parse_error();
 
 #pragma region NEGATIVE_FIXNUM 0xE0 - 0xFF
     case NEGATIVE_FIXNUM:
@@ -1717,7 +1757,7 @@ class parser {
 #pragma endregion
     }
 
-    throw std::runtime_error("not implemented");
+    throw invalid_parse_error();
   }
 
 public:
@@ -1725,13 +1765,15 @@ public:
 
   parser(const std::vector<std::uint8_t> &v)
       : m_p(v.data()), m_size(static_cast<int>(v.size())) {
-    if (m_size < 0)
-      throw std::runtime_error("no size");
+    if (m_size < 0) {
+      throw lack_parse_error();
+    }
   }
 
   parser(const std::uint8_t *p, int size) : m_p(p), m_size(size) {
-    if (m_size < 0)
-      throw std::runtime_error("no size");
+    if (m_size < 0) {
+      throw lack_parse_error();
+    }
   }
 
   const uint8_t *data() const { return m_p; }
@@ -1816,7 +1858,7 @@ public:
       } else if (is_binary()) {
         os << "[bin:" << body_size() << "bytes]";
       } else {
-        throw std::runtime_error("arienai");
+        throw invalid_parse_error();
       }
     }
   }
@@ -1829,7 +1871,7 @@ public:
     else if (type == pack_type::False)
       value = false;
     else
-      throw std::runtime_error("not bool");
+      throw type_parse_error();
     return advance(1);
   }
 
@@ -1922,7 +1964,7 @@ public:
       return get_string(value, 1, 31);
     }
 
-    throw std::runtime_error("not string");
+    throw type_parse_error();
   }
 
   std::string_view get_string() const {
@@ -2010,7 +2052,7 @@ public:
     }
     }
 
-    throw std::runtime_error("not binary");
+    throw type_parse_error();
   }
 
   std::string_view get_binary_view() const {
@@ -2054,7 +2096,7 @@ public:
       break;
 
     default:
-      throw std::runtime_error("not ext");
+      throw type_parse_error();
     }
 
     get_binary_view(bytes);
@@ -2202,7 +2244,7 @@ public:
       return advance(1);
     }
 
-    throw std::runtime_error("not number");
+    throw type_parse_error();
   }
 
   template <typename T> T get_number() const {
@@ -2637,7 +2679,7 @@ public:
       return body_number<std::uint32_t>();
     }
 
-    throw std::runtime_error("not array or map");
+    throw type_parse_error();
   }
 
   parser operator[](int index) const {
@@ -2666,7 +2708,7 @@ public:
       current = current.next();
     }
 
-    throw std::runtime_error("not found");
+    throw std::runtime_error("key not found");
   }
 
   parser next() const {
