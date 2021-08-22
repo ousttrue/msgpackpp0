@@ -1087,11 +1087,11 @@ class parser {
       return 1 + 4;
 
     case EXT8:
-      throw not_implemented_parse_error();
+      return 1 + 1 + 1;
     case EXT16:
-      throw not_implemented_parse_error();
+      return 1 + 2 + 1;
     case EXT32:
-      throw not_implemented_parse_error();
+      return 1 + 4 + 1;
 
     case FLOAT:
       return 1;
@@ -1115,15 +1115,15 @@ class parser {
       return 1;
 
     case FIX_EXT_1:
-      throw not_implemented_parse_error();
+      return 1 + 1;
     case FIX_EXT_2:
-      throw not_implemented_parse_error();
+      return 1 + 1;
     case FIX_EXT_4:
-      throw not_implemented_parse_error();
+      return 1 + 1;
     case FIX_EXT_8:
-      throw not_implemented_parse_error();
+      return 1 + 1;
     case FIX_EXT_16:
-      throw not_implemented_parse_error();
+      return 1 + 1;
 
     case STR8:
       return 1 + 1;
@@ -1635,11 +1635,11 @@ class parser {
       return body_number<std::uint32_t>();
 
     case EXT8:
-      throw not_implemented_parse_error();
+      return body_number<std::uint8_t>();
     case EXT16:
-      throw not_implemented_parse_error();
+      return body_number<std::uint16_t>();
     case EXT32:
-      throw not_implemented_parse_error();
+      return body_number<std::uint32_t>();
 
     case FLOAT:
       return 4;
@@ -1663,15 +1663,15 @@ class parser {
       return 8;
 
     case FIX_EXT_1:
-      throw not_implemented_parse_error();
+      return 1;
     case FIX_EXT_2:
-      throw not_implemented_parse_error();
+      return 2;
     case FIX_EXT_4:
-      throw not_implemented_parse_error();
+      return 4;
     case FIX_EXT_8:
-      throw not_implemented_parse_error();
+      return 8;
     case FIX_EXT_16:
-      throw not_implemented_parse_error();
+      return 16;
 
     case STR8:
       return body_number<std::uint8_t>();

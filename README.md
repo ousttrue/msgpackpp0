@@ -4,7 +4,9 @@
 
 # TODO
 
+* [ ] no throw API
 * [ ] use `std::span`. (using std::string_view)
+* [ ] merge body_index & body_size
 
 # msgpack spec
 - https://github.com/msgpack/msgpack/blob/master/spec.md
