@@ -3244,13 +3244,13 @@ std::vector<std::uint8_t> make_rpc_response(int id, const std::string &error,
 
 inline std::vector<std::uint8_t>
 make_rpc_response_packed(int id, const std::string &error,
-                         const bytes &result) {
+                         const bytes &packed) {
   packer packer;
   packer.pack_array(4);
   packer << 1; // response type
   packer << id;
   packer << error;
-  packer.push(result);
+  packer.push(packed);
   return packer.get_payload();
 }
 
@@ -3264,6 +3264,17 @@ std::vector<std::uint8_t> make_rpc_notify(const std::string &method,
   packer << std::make_tuple(args...);
   return packer.get_payload();
 }
+
+inline std::vector<std::uint8_t>
+make_rpc_notify_packed(const std::string &method, const bytes &packed) {
+  packer packer;
+  packer.pack_array(3);
+  packer << 2; // notify type
+  packer << method;
+  packer.push(packed);
+  return packer.get_payload();
+}
+
 } // namespace msgpackpp
 
 #pragma warning(pop)
